@@ -9,16 +9,13 @@ import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputEditText;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.os.EnvironmentCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.EditText;
 import android.widget.ImageView;
 
 import com.byox.drawviewproject.R;
-import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -30,6 +27,8 @@ import java.io.IOException;
  */
 
 public class SaveBitmapDialog extends DialogFragment {
+
+    private OnSaveBitmapListener onSaveBitmapListener;
 
     // VARS
     private Bitmap mPreviewBitmap;
@@ -81,6 +80,9 @@ public class SaveBitmapDialog extends DialogFragment {
 
                             FileOutputStream fileOutputStream = new FileOutputStream(image);
                             mPreviewBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+
+                            if (onSaveBitmapListener != null)
+                                onSaveBitmapListener.onSaveBitmapCompleted();
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         } catch (IOException e) {
@@ -92,6 +94,8 @@ public class SaveBitmapDialog extends DialogFragment {
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        if (onSaveBitmapListener != null)
+                            onSaveBitmapListener.onSaveBitmapCanceled();
                         dismiss();
                     }
                 });
@@ -102,5 +106,15 @@ public class SaveBitmapDialog extends DialogFragment {
     // METHODS
     public void setPreviewBitmap(Bitmap bitmap){
         this.mPreviewBitmap = bitmap;
+    }
+
+    // LISTENER
+    public void setOnSaveBitmapListener(OnSaveBitmapListener onSaveBitmapListener){
+        this.onSaveBitmapListener = onSaveBitmapListener;
+    }
+
+    public interface OnSaveBitmapListener{
+        void onSaveBitmapCompleted();
+        void onSaveBitmapCanceled();
     }
 }
