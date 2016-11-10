@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <View
+            android:id="@+id/preview_color"
+            android:layout_width="match_parent"
+            android:layout_height="164dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="1">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".2"
+                android:gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="R"
+                android:textStyle="bold" />
+
+            <android.support.v7.widget.AppCompatSeekBar
+                android:id="@+id/acsb_red"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".6"
+                android:max="255"
+                android:padding="12dp" />
+
+            <TextView
+                android:id="@+id/tv_current_red"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".2"
+                android:gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="0"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="1">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".2"
+                android:gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="G"
+                android:textStyle="bold" />
+
+            <android.support.v7.widget.AppCompatSeekBar
+                android:id="@+id/acsb_green"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".6"
+                android:max="255"
+                android:padding="12dp" />
+
+            <TextView
+                android:id="@+id/tv_current_green"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".2"
+                android:gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="0"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="1">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".2"
+                android:gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="B"
+                android:textStyle="bold" />
+
+            <android.support.v7.widget.AppCompatSeekBar
+                android:id="@+id/acsb_blue"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".6"
+                android:max="255"
+                android:padding="12dp" />
+
+            <TextView
+                android:id="@+id/tv_current_blue"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".2"
+                android:gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="0"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_stroke_width"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:padding="12dp"
+            android:text="@string/stroke_width"
+            android:textStyle="bold" />
+
+        <android.support.v7.widget.AppCompatSeekBar
+            android:id="@+id/acsb_stroke_width"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="24dp"
+            android:layout_marginStart="24dp"
+            android:max="56"
+            android:padding="12dp" />
+
+        <TextView
+            android:id="@+id/tv_opacity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:padding="12dp"
+            android:text="@string/opacity"
+            android:textStyle="bold" />
+
+        <android.support.v7.widget.AppCompatSeekBar
+            android:id="@+id/acsb_opacity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="24dp"
+            android:layout_marginStart="24dp"
+            android:max="255"
+            android:padding="12dp" />
+
+        <TextView
+            android:id="@+id/tv_font_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:padding="12dp"
+            android:text="@string/font_size"
+            android:textStyle="bold" />
+
+        <android.support.v7.widget.AppCompatSeekBar
+            android:id="@+id/acsb_font_size"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="24dp"
+            android:layout_marginStart="24dp"
+            android:max="48"
+            android:padding="12dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/chb_anti_alias"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Anti alias"
+                app:buttonTint="@color/colorAccent" />
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/chb_dither"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Dither"
+                app:buttonTint="@color/colorAccent" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:padding="12dp"
+            android:text="Paint style"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <android.support.v7.widget.AppCompatRadioButton
+                android:id="@+id/rb_fill"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Fill"
+                app:buttonTint="@color/colorAccent" />
+
+            <android.support.v7.widget.AppCompatRadioButton
+                android:id="@+id/rb_fill_stroke"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Fill \u0026 Stroke"
+                app:buttonTint="@color/colorAccent" />
+
+            <android.support.v7.widget.AppCompatRadioButton
+                android:id="@+id/rb_stroke"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Stroke"
+                app:buttonTint="@color/colorAccent" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:padding="12dp"
+            android:text="Paint cap"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <android.support.v7.widget.AppCompatRadioButton
+                android:id="@+id/rb_butt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Butt"
+                app:buttonTint="@color/colorAccent" />
+
+            <android.support.v7.widget.AppCompatRadioButton
+                android:id="@+id/rb_round"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Round"
+                app:buttonTint="@color/colorAccent" />
+
+            <android.support.v7.widget.AppCompatRadioButton
+                android:id="@+id/rb_square"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Square"
+                app:buttonTint="@color/colorAccent" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:padding="12dp"
+            android:text="Paint typeface"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <android.support.v7.widget.AppCompatRadioButton
+                android:id="@+id/rb_default"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Default"
+                android:typeface="normal"
+                app:buttonTint="@color/colorAccent" />
+
+            <android.support.v7.widget.AppCompatRadioButton
+                android:id="@+id/rb_monospace"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Monospace"
+                android:typeface="monospace"
+                app:buttonTint="@color/colorAccent" />
+
+            <android.support.v7.widget.AppCompatRadioButton
+                android:id="@+id/rb_sans_serif"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Sans serif"
+                android:typeface="sans"
+                app:buttonTint="@color/colorAccent" />
+
+            <android.support.v7.widget.AppCompatRadioButton
+                android:id="@+id/rb_serif"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:padding="12dp"
+                android:text="Serif"
+                android:typeface="serif"
+                app:buttonTint="@color/colorAccent" />
+        </RadioGroup>
+
+
+    </LinearLayout>
+</android.support.v4.widget.NestedScrollView>
