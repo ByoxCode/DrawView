@@ -1,5 +1,29 @@
 apply plugin: 'com.android.library'
 
+ext {
+    bintrayRepo = 'maven'
+    bintrayName = 'DrawView'
+
+    publishedGroupId = 'com.byox.drawview'
+    libraryName = 'DrawView'
+    artifact = 'drawview'
+
+    libraryDescription = 'Android view that allows the user to create drawings. Customize settings like color, width or tools. Undo or redo actions.'
+
+    siteUrl = 'https://github.com/ByoxCode/DrawView'
+    gitUrl = 'https://github.com/ByoxCode/DrawView.git'
+
+    libraryVersion = '1.0'
+
+    developerId = 'byox'
+    developerName = 'Oscar Medina'
+    developerEmail = 'ing.medinacruz@gmail.com'
+
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+}
+
 android {
     compileSdkVersion 24
     buildToolsVersion "23.0.2"
@@ -29,3 +53,6 @@ dependencies {
     compile 'com.android.support:appcompat-v7:24.2.1'
     testCompile 'junit:junit:4.12'
 }
+
+apply from: 'https://raw.githubusercontent.com/attwellBrian/JCenter/master/installv1.gradle'
+apply from: 'https://raw.githubusercontent.com/attwellBrian/JCenter/master/bintrayv1.gradle'
