@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="DrawView">
+        <attr name="dv_draw_color" format="color"/>
+        <attr name="dv_draw_tool" format="enum">
+            <enum name="pen" value="0"/>
+            <enum name="line" value="1"/>
+            <enum name="rectangle" value="2"/>
+            <enum name="circle" value="3"/>
+        </attr>
+        <attr name="dv_draw_mode" format="enum">
+            <enum name="draw" value="0"/>
+            <enum name="text" value="1"/>
+            <enum name="eraser" value="2"/>
+        </attr>
+        <attr name="dv_draw_width" format="integer"/>
+        <attr name="dv_draw_alpha" format="integer"/>
+        <attr name="dv_draw_anti_alias" format="boolean"/>
+        <attr name="dv_draw_dither" format="boolean"/>
+        <attr name="dv_draw_style" format="enum">
+            <enum name="fill" value="0"/>
+            <enum name="fill_stroke" value="1"/>
+            <enum name="stroke" value="2"/>
+        </attr>
+        <attr name="dv_draw_corners" format="enum">
+            <enum name="butt" value="0"/>
+            <enum name="round" value="1"/>
+            <enum name="square" value="2"/>
+        </attr>
+        <attr name="dv_draw_font_family" format="enum">
+            <enum name="default_font" value="0"/>
+            <enum name="monospace" value="1"/>
+            <enum name="sans_serif" value="2"/>
+            <enum name="serif" value="3"/>
+        </attr>
+        <attr name="dv_draw_font_size" format="integer"/>
+    </declare-styleable>
+</resources>
