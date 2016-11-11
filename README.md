@@ -1,5 +1,8 @@
 # DrawView
 
+![drawview](https://github.com/ByoxCode/DrawView/blob/master/destacada.png)
+
+
 Android view that allows the user to create drawings. Draw anything you like in your Android device from simple view.
 
 Customize draw settings like draw color, draw width or draw tools. 
@@ -9,6 +12,8 @@ Undo or redo actions it is possible with DrawView.
 ![undo redo gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_17.57.50.gif)
 ![text tool gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.00.25.gif)
 ![save bitmap gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.03.14.gif)
+
+View example [APK]()
 
 Usage
 --------
