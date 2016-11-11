@@ -1,6 +1,5 @@
 <resources>
-    <string name="app_name">DrawViewProject</string>
-    <string name="action_settings">Settings</string>
+    <string name="app_name">DrawView Library</string>
 
     <string name="stroke_width">Stroke width: %1$d</string>
     <string name="opacity">Opacity: %1$d</string>

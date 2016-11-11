@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if ((int) mFabActions.getTag() == 1)
+        if (Integer.parseInt(mFabActions.getTag().toString()) == 1)
             mFabActions.performClick();
         else
             super.onBackPressed();
