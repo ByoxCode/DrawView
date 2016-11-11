@@ -24,6 +24,7 @@ public class DrawMove {
     private DrawingTool mDrawingTool;
     private List<Path> mDrawingPathList;
     private float mStartX, mStartY, mEndX, mEndY;
+    private String mText;
 
     // GETTERS
 
@@ -50,6 +51,9 @@ public class DrawMove {
     }
     public float getEndY() {
         return mEndY;
+    }
+    public String getText() {
+        return mText;
     }
 
     // SETTERS
@@ -90,6 +94,11 @@ public class DrawMove {
 
     public DrawMove setEndY(float endY) {
         this.mEndY = endY;
+        return this;
+    }
+
+    public DrawMove setText(String text){
+        this.mText = text;
         return this;
     }
 }

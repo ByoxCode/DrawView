@@ -15,6 +15,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.FrameLayout;
 
 import com.byox.drawview.R;
 import com.byox.drawview.dictionaries.DrawMove;
@@ -28,17 +29,16 @@ import java.util.List;
 
 /**
  * Created by Ing. Oscar G. Medina Cruz on 06/11/2016.
- *
- * This view was created for draw or paint anything you want.
- *
  * <p>
- *     This view can be configurated for change draw color, width size, can use tools like pen, line, circle, square.
+ * This view was created for draw or paint anything you want.
+ * <p>
+ * <p>
+ * This view can be configurated for change draw color, width size, can use tools like pen, line, circle, square.
  * </p>
  *
  * @author Ing. Oscar G. Medina Cruz
- *
  */
-public class DrawView extends View implements View.OnTouchListener {
+public class DrawView extends FrameLayout implements View.OnTouchListener {
 
     // FINAL VARS
     final String TAG = "DrawView";
@@ -141,12 +141,18 @@ public class DrawView extends View implements View.OnTouchListener {
                                     drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
                             break;
                         case CIRCLE:
-                            canvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(),
-                                    drawMove.getEndX() - drawMove.getStartX(), drawMove.getPaint());
+                            if (drawMove.getEndX() > drawMove.getStartX())
+                                canvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(),
+                                        drawMove.getEndX() - drawMove.getStartX(), drawMove.getPaint());
+                            else
+                                canvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(),
+                                        drawMove.getStartX() - drawMove.getEndX(), drawMove.getPaint());
                             break;
                     }
                     break;
                 case TEXT:
+                    if (drawMove.getText() != null && !drawMove.getText().equals(""))
+                        canvas.drawText(drawMove.getText(), drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
                     break;
                 case ERASER:
                     if (drawMove.getDrawingPathList() != null &&
@@ -212,6 +218,9 @@ public class DrawView extends View implements View.OnTouchListener {
                             .get(mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList().size() - 1)
                             .lineTo(motionEvent.getX(), motionEvent.getY());
                 }
+
+                if (onDrawViewListener != null && mDrawingMode == DrawingMode.TEXT)
+                    onDrawViewListener.onRequestText();
 
                 if (onDrawViewListener != null)
                     onDrawViewListener.onEndDrawing();
@@ -328,21 +337,21 @@ public class DrawView extends View implements View.OnTouchListener {
         if (mDrawMoveHistory.size() > 0) {
             currentPaint = new Paint();
             currentPaint.setColor(
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getPaint().getColor());
+                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getColor());
             currentPaint.setStyle(
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getPaint().getStyle());
+                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getStyle());
             currentPaint.setDither(
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getPaint().isDither());
+                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().isDither());
             currentPaint.setStrokeWidth(
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getPaint().getStrokeWidth());
+                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getStrokeWidth());
             currentPaint.setAlpha(
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getPaint().getAlpha());
+                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getAlpha());
             currentPaint.setAntiAlias(
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getPaint().isAntiAlias());
+                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().isAntiAlias());
             currentPaint.setStrokeCap(
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getPaint().getStrokeCap());
+                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getStrokeCap());
             currentPaint.setTypeface(
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getPaint().getTypeface());
+                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getTypeface());
             currentPaint.setTextSize(mFontSize);
         } else {
             currentPaint = new Paint();
@@ -400,7 +409,7 @@ public class DrawView extends View implements View.OnTouchListener {
      *
      * @return if the view can do the undo action
      */
-    public boolean canUndo(){
+    public boolean canUndo() {
         return mDrawMoveHistoryIndex > -1 &&
                 mDrawMoveHistory.size() > 0;
     }
@@ -425,17 +434,17 @@ public class DrawView extends View implements View.OnTouchListener {
      *
      * @return if the view can do the redo action
      */
-    public boolean canRedo(){
+    public boolean canRedo() {
         return mDrawMoveHistoryIndex < mDrawMoveHistory.size() - 1;
     }
 
     /**
-     * Get capture of the drawing view as bitmap or as byte array
+     * Create capture of the drawing view as bitmap or as byte array
      *
      * @param drawingCapture
      * @return Object in form of bitmap or byte array
      */
-    public Object createCapture(DrawingCapture drawingCapture){
+    public Object createCapture(DrawingCapture drawingCapture) {
         setDrawingCacheEnabled(false);
         setDrawingCacheEnabled(true);
 
@@ -450,40 +459,75 @@ public class DrawView extends View implements View.OnTouchListener {
         return null;
     }
 
+    /**
+     * Refresh the text of the last movement item
+     *
+     * @param newText
+     */
+    public void refreshLastText(String newText) {
+        if (mDrawMoveHistory.get(mDrawMoveHistory.size() - 1)
+                .getDrawingMode() == DrawingMode.TEXT) {
+            mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setText(newText);
+            invalidate();
+        } else
+            Log.e(TAG, "The last item that you want to refresh text isn't TEXT element.");
+    }
+
+    /**
+     * Delete las history element, this can help for cancel the text request.
+     */
+    public void cancelTextRequest() {
+        if (mDrawMoveHistory != null && mDrawMoveHistory.size() > 0) {
+            mDrawMoveHistory.remove(mDrawMoveHistory.size() - 1);
+            mDrawMoveHistoryIndex--;
+        }
+    }
+
     // GETTERS
     public int getDrawAlpha() {
         return mDrawAlpha;
     }
+
     public int getDrawColor() {
         return mDrawColor;
     }
+
     public int getDrawWidth() {
         return mDrawWidth;
     }
+
     public DrawingMode getDrawingMode() {
         return mDrawingMode;
     }
+
     public DrawingTool getDrawingTool() {
         return mDrawingTool;
     }
+
     public int getBackgroundColor() {
         return mBackgroundColor;
     }
+
     public Paint.Style getPaintStyle() {
         return mPaintStyle;
     }
+
     public Paint.Cap getLineCap() {
         return mLineCap;
     }
+
     public Typeface getFontFamily() {
         return mFontFamily;
     }
+
     public float getFontSize() {
         return mFontSize;
     }
+
     public boolean isAntiAlias() {
         return mAntiAlias;
     }
+
     public boolean isDither() {
         return mDither;
     }
@@ -629,16 +673,20 @@ public class DrawView extends View implements View.OnTouchListener {
      *
      * @param onDrawViewListener
      */
-    public void setOnDrawViewListener(OnDrawViewListener onDrawViewListener){
+    public void setOnDrawViewListener(OnDrawViewListener onDrawViewListener) {
         this.onDrawViewListener = onDrawViewListener;
     }
 
     /**
      * Listener for registering drawing actions of the view
      */
-    public interface OnDrawViewListener{
+    public interface OnDrawViewListener {
         void onStartDrawing();
+
         void onEndDrawing();
+
         void onClearDrawing();
+
+        void onRequestText();
     }
 }

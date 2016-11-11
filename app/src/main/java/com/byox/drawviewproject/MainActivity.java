@@ -26,6 +26,7 @@ import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingTool;
 import com.byox.drawview.views.DrawView;
 import com.byox.drawviewproject.dialogs.DrawAttribsDialog;
+import com.byox.drawviewproject.dialogs.RequestTextDialog;
 import com.byox.drawviewproject.dialogs.SaveBitmapDialog;
 import com.byox.drawviewproject.dialogs.SelectChoiceDialog;
 import com.byox.drawviewproject.utils.AnimateUtils;
@@ -147,6 +148,24 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onStartDrawing() { canUndoRedo(); }
             @Override public void onEndDrawing() { canUndoRedo(); }
             @Override public void onClearDrawing() { canUndoRedo(); }
+
+            @Override
+            public void onRequestText() {
+                RequestTextDialog requestTextDialog =
+                        RequestTextDialog.newInstance("");
+                requestTextDialog.setOnRequestTextListener(new RequestTextDialog.OnRequestTextListener() {
+                    @Override
+                    public void onRequestTextConfirmed(String requestedText) {
+                        mDrawView.refreshLastText(requestedText);
+                    }
+
+                    @Override
+                    public void onRequestTextCancelled() {
+                        mDrawView.cancelTextRequest();
+                    }
+                });
+                requestTextDialog.show(getSupportFragmentManager(), "requestText");
+            }
         });
 
         mFadeView.setOnClickListener(new View.OnClickListener() {
