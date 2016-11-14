@@ -184,7 +184,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                         mDrawMoveHistoryIndex < mDrawMoveHistory.size() - 1)
                     mDrawMoveHistory = mDrawMoveHistory.subList(0, mDrawMoveHistoryIndex + 1);
 
-                mDrawMoveHistory.add(new DrawMove()
+                mDrawMoveHistory.add(DrawMove.newInstance()
                         .setPaint(getNewPaintParams())
                         .setStartX(motionEvent.getX()).setStartY(motionEvent.getY())
                         .setEndX(motionEvent.getX()).setEndY(motionEvent.getY())

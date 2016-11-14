@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * Created by Ing. Oscar G. Medina Cruz on 07/11/2016.
- *
+ * <p>
  * Dictionary class that save move for draw in the view, this allow the user to make a history
  * of the user movements in the view and make a redo/undo.
  *
@@ -19,6 +19,8 @@ import java.util.List;
 
 public class DrawMove {
 
+    private static DrawMove mSingleton;
+
     private Paint mPaint;
     private DrawingMode mDrawingMode;
     private DrawingTool mDrawingTool;
@@ -26,32 +28,48 @@ public class DrawMove {
     private float mStartX, mStartY, mEndX, mEndY;
     private String mText;
 
+    // METHODS
+    public DrawMove(){}
+
+    public static DrawMove newInstance() {
+        mSingleton = new DrawMove();
+        return mSingleton;
+    }
+
     // GETTERS
 
     public Paint getPaint() {
         return mPaint;
     }
-    public DrawingMode getDrawingMode(){
+
+    public DrawingMode getDrawingMode() {
         return mDrawingMode;
     }
-    public DrawingTool getDrawingTool(){
+
+    public DrawingTool getDrawingTool() {
         return mDrawingTool;
     }
+
     public List<Path> getDrawingPathList() {
         return mDrawingPathList;
     }
+
     public float getStartX() {
         return mStartX;
     }
+
     public float getStartY() {
         return mStartY;
     }
+
     public float getEndX() {
         return mEndX;
     }
+
     public float getEndY() {
         return mEndY;
     }
+
     public String getText() {
         return mText;
     }
@@ -59,46 +77,64 @@ public class DrawMove {
     // SETTERS
     public DrawMove setPaint(Paint paint) {
         this.mPaint = paint;
-        return this;
+        if (mSingleton != null)
+            return mSingleton;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
-    public DrawMove setDrawingMode(DrawingMode drawingMode){
+    public DrawMove setDrawingMode(DrawingMode drawingMode) {
         this.mDrawingMode = drawingMode;
-        return this;
+        if (mSingleton != null)
+            return mSingleton;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
-    public DrawMove setDrawingTool(DrawingTool drawingTool){
+    public DrawMove setDrawingTool(DrawingTool drawingTool) {
         this.mDrawingTool = drawingTool;
-        return this;
+        if (mSingleton != null)
+            return mSingleton;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setDrawingPathList(List<Path> drawingPathList) {
         this.mDrawingPathList = drawingPathList;
-        return this;
+        if (mSingleton != null)
+            return mSingleton;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setStartX(float startX) {
         this.mStartX = startX;
-        return this;
+        if (mSingleton != null)
+            return mSingleton;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setStartY(float startY) {
         this.mStartY = startY;
-        return this;
+        if (mSingleton != null)
+            return mSingleton;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setEndX(float endX) {
         this.mEndX = endX;
-        return this;
+        if (mSingleton != null)
+            return mSingleton;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setEndY(float endY) {
         this.mEndY = endY;
-        return this;
+        if (mSingleton != null)
+            return mSingleton;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
-    public DrawMove setText(String text){
+    public DrawMove setText(String text) {
         this.mText = text;
-        return this;
+        if (mSingleton != null)
+            return mSingleton;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 }
