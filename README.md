@@ -1,5 +1,8 @@
 # DrawView
 
+![drawview](https://github.com/ByoxCode/DrawView/blob/master/destacada.png)
+
+
 Android view that allows the user to create drawings. Draw anything you like in your Android device from simple view.
 
 Customize draw settings like draw color, draw width or draw tools. 
@@ -10,19 +13,21 @@ Undo or redo actions it is possible with DrawView.
 ![text tool gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.00.25.gif)
 ![save bitmap gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.03.14.gif)
 
+View example [APK](https://play.google.com/store/apps/details?id=com.byox.drawviewproject)
+
 Usage
 --------
 
 With Gradle:
 ```groovy
-  compile 'com.byox.drawview:drawview:1.0'
+  compile 'com.byox.drawview:drawview:1.0.1'
 ```
 or Maven:
 ```xml
 <dependency>
   <groupId>com.byox.drawview</groupId>
   <artifactId>drawview</artifactId>
-  <version>1.0</version>
+  <version>1.0.1</version>
   <type>pom</type>
 </dependency>
 ```
