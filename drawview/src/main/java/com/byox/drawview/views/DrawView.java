@@ -180,7 +180,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                 if (onDrawViewListener != null)
                     onDrawViewListener.onStartDrawing();
 
-                if (mDrawMoveHistoryIndex != -1 &&
+                if (mDrawMoveHistoryIndex >= -1 &&
                         mDrawMoveHistoryIndex < mDrawMoveHistory.size() - 1)
                     mDrawMoveHistory = mDrawMoveHistory.subList(0, mDrawMoveHistoryIndex + 1);
 
