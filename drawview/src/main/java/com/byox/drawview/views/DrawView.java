@@ -535,6 +535,25 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     // SETTERS
 
     /**
+     * Set the new draw parametters easily
+     *
+     * @param paint
+     * @return this instance of the view
+     */
+    public DrawView refreshAttributes(Paint paint){
+        mDrawColor = paint.getColor();
+        mPaintStyle = paint.getStyle();
+        mDither = paint.isDither();
+        mDrawWidth = (int) paint.getStrokeWidth();
+        mDrawAlpha = paint.getAlpha();
+        mAntiAlias = paint.isAntiAlias();
+        mLineCap = paint.getStrokeCap();
+        mFontFamily = paint.getTypeface();
+        mFontSize = paint.getTextSize();
+        return this;
+    }
+
+    /**
      * Set the current alpha value for the drawing
      *
      * @param drawAlpha

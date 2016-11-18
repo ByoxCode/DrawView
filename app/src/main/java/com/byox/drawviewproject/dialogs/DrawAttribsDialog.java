@@ -82,7 +82,7 @@ public class DrawAttribsDialog extends DialogFragment {
         seekBarBlue.setProgress(Color.blue(mPaint.getColor()));
         seekBarStrokeWidth.setProgress((int) mPaint.getStrokeWidth());
         seekBarOpacity.setProgress((int) mPaint.getAlpha());
-        seekBarFontSize.setProgress(12);
+        seekBarFontSize.setProgress((int) mPaint.getTextSize());
 
         textViewRedValue.setText(String.valueOf(Color.red(mPaint.getColor())));
         textViewGreenValue.setText(String.valueOf(Color.green(mPaint.getColor())));
@@ -164,6 +164,7 @@ public class DrawAttribsDialog extends DialogFragment {
         seekBarFontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                mPaint.setTextSize(i);
                 textViewFontSize.setText(getContext().getResources().getString(R.string.font_size, i));
             }
 
@@ -278,7 +279,7 @@ public class DrawAttribsDialog extends DialogFragment {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         if (onCustomViewDialogListener != null)
-                            onCustomViewDialogListener.onRefreshPaint(mPaint, seekBarFontSize.getProgress());
+                            onCustomViewDialogListener.onRefreshPaint(mPaint);
                         dismiss();
                     }
                 })
@@ -302,7 +303,7 @@ public class DrawAttribsDialog extends DialogFragment {
     }
 
     public interface OnCustomViewDialogListener {
-        void onRefreshPaint(Paint newPaint, float fontSize);
+        void onRefreshPaint(Paint newPaint);
     }
 }
 

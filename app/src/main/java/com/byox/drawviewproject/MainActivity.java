@@ -349,7 +349,7 @@ public class MainActivity extends AppCompatActivity {
         drawAttribsDialog.setPaint(mDrawView.getCurrentPaintParams());
         drawAttribsDialog.setOnCustomViewDialogListener(new DrawAttribsDialog.OnCustomViewDialogListener() {
             @Override
-            public void onRefreshPaint(Paint newPaint, float fontSize) {
+            public void onRefreshPaint(Paint newPaint) {
                 mDrawView.setDrawColor(newPaint.getColor())
                         .setPaintStyle(newPaint.getStyle())
                         .setDither(newPaint.isDither())
@@ -358,7 +358,10 @@ public class MainActivity extends AppCompatActivity {
                         .setAntiAlias(newPaint.isAntiAlias())
                         .setLineCap(newPaint.getStrokeCap())
                         .setFontFamily(newPaint.getTypeface())
-                        .setFontSize(fontSize);
+                        .setFontSize(newPaint.getTextSize());
+
+//                If you prefer, you can easily refresh new attributes using this method
+//                mDrawView.refreshAttributes(newPaint);
             }
         });
         drawAttribsDialog.show(getSupportFragmentManager(), "drawAttribs");
