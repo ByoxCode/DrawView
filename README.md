@@ -20,7 +20,7 @@ Usage
 
 With Gradle:
 ```groovy
-  compile 'com.byox.drawview:drawview:1.0.2'
+  compile 'com.byox.drawview:drawview:1.0.4'
 ```
 or Maven:
 ```xml
