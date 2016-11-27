@@ -58,7 +58,9 @@ Attributes
 --------
 Please visit [Wiki](https://github.com/ByoxCode/DrawView/wiki)
 
-
+Donate
+--------
+If this library is useful for you, and you like it, and if want to contribute for develop more libraries, you can buy me a beer. [Click here to donate](https://github.com/ByoxCode/DrawView/wiki/3.1-Contribute-for-develop-more-libraries)
 
 License
 --------
