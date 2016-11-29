@@ -334,7 +334,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      */
     public Paint getCurrentPaintParams() {
         Paint currentPaint;
-        if (mDrawMoveHistory.size() > 0) {
+        if (mDrawMoveHistory.size() > 0&&mDrawMoveHistoryIndex>=0) {
             currentPaint = new Paint();
             currentPaint.setColor(
                     mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getColor());
