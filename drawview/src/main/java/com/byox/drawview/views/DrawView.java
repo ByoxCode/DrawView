@@ -334,7 +334,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      */
     public Paint getCurrentPaintParams() {
         Paint currentPaint;
-        if (mDrawMoveHistory.size() > 0&&mDrawMoveHistoryIndex>=0) {
+        if (mDrawMoveHistory.size() > 0 && mDrawMoveHistoryIndex >= 0) {
             currentPaint = new Paint();
             currentPaint.setColor(
                     mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getColor());
@@ -540,7 +540,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @param paint
      * @return this instance of the view
      */
-    public DrawView refreshAttributes(Paint paint){
+    public DrawView refreshAttributes(Paint paint) {
         mDrawColor = paint.getColor();
         mPaintStyle = paint.getStyle();
         mDither = paint.isDither();
