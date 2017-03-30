@@ -20,14 +20,14 @@ Usage
 
 With Gradle:
 ```groovy
-  compile 'com.byox.drawview:drawview:1.0.5'
+  compile 'com.byox.drawview:drawview:1.2.0'
 ```
 or Maven:
 ```xml
 <dependency>
   <groupId>com.byox.drawview</groupId>
   <artifactId>drawview</artifactId>
-  <version>1.0.5</version>
+  <version>1.2.0</version>
   <type>pom</type>
 </dependency>
 ```
@@ -46,8 +46,10 @@ Add DrawView to your layout
         app:dv_draw_color="@color/colorAccent"
         app:dv_draw_corners="round"
         app:dv_draw_dither="true"
+        app:dv_draw_enable_zoom="true"
         app:dv_draw_font_family="default_font"
         app:dv_draw_font_size="12"
+        app:dv_draw_max_zoom_factor="15"
         app:dv_draw_mode="draw"
         app:dv_draw_style="stroke"
         app:dv_draw_tool="pen"
