@@ -7,21 +7,30 @@
     android:fitsSystemWindows="true"
     tools:context="com.byox.drawviewproject.MainActivity">
 
-    <android.support.design.widget.AppBarLayout
+    <android.support.design.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/AppTheme.AppBarOverlay">
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="false">
 
-        <android.support.v7.widget.Toolbar
-            android:id="@+id/toolbar"
+        <android.support.design.widget.AppBarLayout
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
+            android:layout_height="wrap_content"
+            android:fitsSystemWindows="false"
+            android:stateListAnimator="@animator/appbar_always_elevated"
+            android:theme="@style/AppTheme.AppBarOverlay">
 
-    </android.support.design.widget.AppBarLayout>
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="?attr/colorPrimary"
+                app:popupTheme="@style/AppTheme.PopupOverlay" />
 
-    <include layout="@layout/content_main" />
+        </android.support.design.widget.AppBarLayout>
+
+        <include layout="@layout/content_main" />
+
+    </android.support.design.widget.CoordinatorLayout>
 
     <View
         android:id="@+id/fade_view"
@@ -35,7 +44,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="279dp"
+        android:layout_marginBottom="407dp"
         android:layout_marginEnd="72dp"
         android:layout_marginStart="72dp"
         android:visibility="invisible"
@@ -58,7 +67,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="284dp"
+        android:layout_marginBottom="412dp"
         android:layout_marginEnd="24dp"
         android:layout_marginStart="24dp"
         android:visibility="invisible"
@@ -71,7 +80,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="228dp"
+        android:layout_marginBottom="359dp"
         android:layout_marginEnd="72dp"
         android:layout_marginStart="72dp"
         android:visibility="invisible"
@@ -94,7 +103,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="236dp"
+        android:layout_marginBottom="364dp"
         android:layout_marginEnd="24dp"
         android:layout_marginStart="24dp"
         android:visibility="invisible"
@@ -107,7 +116,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="178dp"
+        android:layout_marginBottom="308dp"
         android:layout_marginEnd="72dp"
         android:layout_marginStart="72dp"
         android:visibility="invisible"
@@ -130,7 +139,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="184dp"
+        android:layout_marginBottom="316dp"
         android:layout_marginEnd="24dp"
         android:layout_marginStart="24dp"
         android:visibility="invisible"
@@ -143,7 +152,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="128dp"
+        android:layout_marginBottom="258dp"
         android:layout_marginEnd="72dp"
         android:layout_marginStart="72dp"
         android:visibility="invisible"
@@ -166,7 +175,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="133dp"
+        android:layout_marginBottom="264dp"
         android:layout_marginEnd="24dp"
         android:layout_marginStart="24dp"
         android:visibility="invisible"
@@ -175,11 +184,47 @@
         app:srcCompat="@drawable/ic_image_brush" />
 
     <android.support.v7.widget.CardView
+        android:id="@+id/cv_draw_background"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="208dp"
+        android:layout_marginEnd="72dp"
+        android:layout_marginStart="72dp"
+        android:visibility="invisible"
+        app:cardCornerRadius="4dp"
+        app:cardElevation="6dp"
+        app:cardPreventCornerOverlap="true"
+        app:cardUseCompatPadding="true">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="6dp"
+            android:text="Background"
+            android:textSize="14sp" />
+
+    </android.support.v7.widget.CardView>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab_draw_background"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="213dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginStart="24dp"
+        android:visibility="invisible"
+        app:elevation="6dp"
+        app:fabSize="mini"
+        app:srcCompat="@drawable/ic_image" />
+
+    <android.support.v7.widget.CardView
         android:id="@+id/cv_draw_attrs"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="78dp"
+        android:layout_marginBottom="158dp"
         android:layout_marginEnd="72dp"
         android:layout_marginStart="72dp"
         android:visibility="invisible"
@@ -202,7 +247,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="82dp"
+        android:layout_marginBottom="162dp"
         android:layout_marginEnd="24dp"
         android:layout_marginStart="24dp"
         android:visibility="invisible"
@@ -215,7 +260,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
+        android:layout_marginBottom="96dp"
+        android:layout_marginEnd="@dimen/fab_margin"
+        android:layout_marginStart="@dimen/fab_margin"
         android:tag="0"
         android:tint="#FFF"
         app:elevation="6dp"

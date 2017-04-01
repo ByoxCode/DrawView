@@ -29,9 +29,18 @@ import com.byox.drawviewproject.dialogs.DrawAttribsDialog;
 import com.byox.drawviewproject.dialogs.RequestTextDialog;
 import com.byox.drawviewproject.dialogs.SaveBitmapDialog;
 import com.byox.drawviewproject.dialogs.SelectChoiceDialog;
+import com.byox.drawviewproject.dialogs.SelectImageDialog;
 import com.byox.drawviewproject.utils.AnimateUtils;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.NativeExpressAdView;
+
+import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
+
+    // CONSTANTS
+    private final int STORAGE_PERMISSIONS = 1000;
+    private final int STORAGE_PERMISSIONS2 = 2000;
 
     // VIEWS
     private Toolbar mToolbar;
@@ -41,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton mFabActions;
     private FloatingActionButton mFabDrawAttrs;
     private CardView mCardViewDrawAttrs;
+    private FloatingActionButton mFabBackgroundImage;
+    private CardView mCardViewBackgroundImage;
     private FloatingActionButton mFabDrawTool;
     private CardView mCardViewDrawTool;
     private FloatingActionButton mFabDrawMode;
@@ -53,8 +64,8 @@ public class MainActivity extends AppCompatActivity {
     private MenuItem mMenuItemRedo;
     private MenuItem mMenuItemUndo;
 
-    // VARS
-    private final int STORAGE_PERMISSIONS = 1000;
+    // ADS
+    private NativeExpressAdView mAdView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,11 +75,13 @@ public class MainActivity extends AppCompatActivity {
         mFadeView = findViewById(R.id.fade_view);
         mFabActions = (FloatingActionButton) findViewById(R.id.fab_actions);
         mFabDrawAttrs = (FloatingActionButton) findViewById(R.id.fab_draw_attrs);
+        mFabBackgroundImage = (FloatingActionButton) findViewById(R.id.fab_draw_background);
         mFabDrawTool = (FloatingActionButton) findViewById(R.id.fab_draw_tool);
         mFabDrawMode = (FloatingActionButton) findViewById(R.id.fab_draw_mode);
         mFabSaveDraw = (FloatingActionButton) findViewById(R.id.fab_draw_save);
         mFabClearDraw = (FloatingActionButton) findViewById(R.id.fab_draw_clear);
         mCardViewDrawAttrs = (CardView) findViewById(R.id.cv_draw_attrs);
+        mCardViewBackgroundImage = (CardView) findViewById(R.id.cv_draw_background);
         mCardViewDrawTool = (CardView) findViewById(R.id.cv_draw_tool);
         mCardViewDrawMode = (CardView) findViewById(R.id.cv_draw_mode);
         mCardViewSaveDraw = (CardView) findViewById(R.id.cv_draw_save);
@@ -77,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
         setupToolbar();
         setupDrawView();
         setListeners();
+        setupADS();
     }
 
     @Override
@@ -124,6 +138,17 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             saveDraw();
+                        }
+                    }, 600);
+                }
+                break;
+            case STORAGE_PERMISSIONS2:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            chooseBackgroundImage();
                         }
                     }, 600);
                 }
@@ -188,14 +213,16 @@ public class MainActivity extends AppCompatActivity {
 
                     AnimateUtils.ScaleInAnimation(mFabDrawAttrs, 50, 150, new OvershootInterpolator(), true);
                     AnimateUtils.ScaleInAnimation(mCardViewDrawAttrs, 50, 150, new OvershootInterpolator(), true);
-                    AnimateUtils.ScaleInAnimation(mFabDrawTool, 100, 150, new OvershootInterpolator(), true);
-                    AnimateUtils.ScaleInAnimation(mCardViewDrawTool, 100, 150, new OvershootInterpolator(), true);
-                    AnimateUtils.ScaleInAnimation(mFabDrawMode, 150, 150, new OvershootInterpolator(), true);
-                    AnimateUtils.ScaleInAnimation(mCardViewDrawMode, 150, 150, new OvershootInterpolator(), true);
-                    AnimateUtils.ScaleInAnimation(mFabSaveDraw, 200, 150, new OvershootInterpolator(), true);
-                    AnimateUtils.ScaleInAnimation(mCardViewSaveDraw, 200, 150, new OvershootInterpolator(), true);
-                    AnimateUtils.ScaleInAnimation(mFabClearDraw, 250, 150, new OvershootInterpolator(), true);
-                    AnimateUtils.ScaleInAnimation(mCardViewClearDraw, 250, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleInAnimation(mFabBackgroundImage, 100, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleInAnimation(mCardViewBackgroundImage, 100, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleInAnimation(mFabDrawTool, 150, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleInAnimation(mCardViewDrawTool, 150, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleInAnimation(mFabDrawMode, 200, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleInAnimation(mCardViewDrawMode, 200, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleInAnimation(mFabSaveDraw, 250, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleInAnimation(mCardViewSaveDraw, 250, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleInAnimation(mFabClearDraw, 300, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleInAnimation(mCardViewClearDraw, 300, 150, new OvershootInterpolator(), true);
                 } else {
                     status = 0;
                     mFabActions.animate().rotation(0).setInterpolator(new AccelerateDecelerateInterpolator())
@@ -210,8 +237,10 @@ public class MainActivity extends AppCompatActivity {
                     AnimateUtils.ScaleOutAnimation(mCardViewDrawMode, 150, 150, new OvershootInterpolator(), true);
                     AnimateUtils.ScaleOutAnimation(mFabDrawTool, 200, 150, new OvershootInterpolator(), true);
                     AnimateUtils.ScaleOutAnimation(mCardViewDrawTool, 200, 150, new OvershootInterpolator(), true);
-                    AnimateUtils.ScaleOutAnimation(mFabDrawAttrs, 250, 150, new OvershootInterpolator(), true);
-                    AnimateUtils.ScaleOutAnimation(mCardViewDrawAttrs, 250, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleOutAnimation(mFabBackgroundImage, 250, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleOutAnimation(mCardViewBackgroundImage, 250, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleOutAnimation(mFabDrawAttrs, 300, 150, new OvershootInterpolator(), true);
+                    AnimateUtils.ScaleOutAnimation(mCardViewDrawAttrs, 300, 150, new OvershootInterpolator(), true);
                 }
                 view.setTag(status);
             }
@@ -282,7 +311,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if (view.getVisibility() == View.VISIBLE) {
                     mFabActions.performClick();
-                    requestPermissions();
+                    requestPermissions(0);
                 }
             }
         });
@@ -292,7 +321,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if (view.getVisibility() == View.VISIBLE) {
                     mFabActions.performClick();
-                    requestPermissions();
+                    requestPermissions(0);
                 }
             }
         });
@@ -316,12 +345,41 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        mFabBackgroundImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (view.getVisibility() == View.VISIBLE) {
+                    mFabActions.performClick();
+                    requestPermissions(1);
+                }
+            }
+        });
+
+        mCardViewBackgroundImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (view.getVisibility() == View.VISIBLE) {
+                    mFabActions.performClick();
+                    requestPermissions(1);
+                }
+            }
+        });
+    }
+
+    private void setupADS(){
+        mAdView = (NativeExpressAdView) findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder()
+                .addTestDevice("FCFD13908AA93E51A1BA390FA8010631")
+                .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
+                .build();
+        mAdView.loadAd(adRequest);
     }
 
     private void changeDrawTool(){
         SelectChoiceDialog selectChoiceDialog =
                 SelectChoiceDialog.newInstance("Select a draw tool",
-                        "PEN", "LINE", "RECTANGLE", "CIRCLE");
+                        "PEN", "LINE", "RECTANGLE", "CIRCLE", "ELLIPSE");
         selectChoiceDialog.setOnChoiceDialogListener(new SelectChoiceDialog.OnChoiceDialogListener() {
             @Override
             public void onChoiceSelected(int position) {
@@ -359,7 +417,6 @@ public class MainActivity extends AppCompatActivity {
                         .setLineCap(newPaint.getStrokeCap())
                         .setFontFamily(newPaint.getTypeface())
                         .setFontSize(newPaint.getTextSize());
-
 //                If you prefer, you can easily refresh new attributes using this method
 //                mDrawView.refreshAttributes(newPaint);
             }
@@ -384,6 +441,22 @@ public class MainActivity extends AppCompatActivity {
         saveBitmapDialog.show(getSupportFragmentManager(), "saveBitmap");
     }
 
+    private void chooseBackgroundImage(){
+        SelectImageDialog selectImageDialog = SelectImageDialog.newInstance();
+        selectImageDialog.setOnImageSelectListener(new SelectImageDialog.OnImageSelectListener() {
+            @Override
+            public void onSelectImage(File imageFile) {
+                mDrawView.setBackgroundImage(imageFile);
+            }
+
+            @Override
+            public void onSelectImage(byte[] imageBytes) {
+
+            }
+        });
+        selectImageDialog.show(getSupportFragmentManager(), SelectImageDialog.SELEC_IMAGE_DIALOG);
+    }
+
     private void clearDraw(){
         mDrawView.restartDrawing();
     }
@@ -405,23 +478,42 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void requestPermissions(){
+    private void requestPermissions(int option){
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(MainActivity.this,
-                    Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                    || ContextCompat.checkSelfPermission(MainActivity.this,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            if (option == 0) {
+                if (ContextCompat.checkSelfPermission(MainActivity.this,
+                        Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                        || ContextCompat.checkSelfPermission(MainActivity.this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
 
-                ActivityCompat.requestPermissions(MainActivity.this,
-                        new String[]{
-                                Manifest.permission.READ_EXTERNAL_STORAGE,
-                                Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        STORAGE_PERMISSIONS);
-            } else {
-                saveDraw();
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{
+                                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                                    Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            STORAGE_PERMISSIONS);
+                } else {
+                    saveDraw();
+                }
+            } else if (option == 1){
+                if (ContextCompat.checkSelfPermission(MainActivity.this,
+                        Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                        || ContextCompat.checkSelfPermission(MainActivity.this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{
+                                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                                    Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            STORAGE_PERMISSIONS2);
+                } else {
+                    chooseBackgroundImage();
+                }
             }
         } else {
-            saveDraw();
+            if (option == 0)
+                saveDraw();
+            else if (option == 1)
+                chooseBackgroundImage();
         }
     }
 }

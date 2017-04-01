@@ -8,6 +8,7 @@
         android:id="@+id/iv_capture_preview"
         android:layout_width="match_parent"
         android:layout_height="248dp"
+        android:background="@drawable/drawable_transparent_dialog_pattern"
         android:scaleType="centerInside" />
 
     <android.support.design.widget.TextInputLayout

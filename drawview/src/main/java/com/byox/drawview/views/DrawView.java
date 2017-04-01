@@ -1,29 +1,48 @@
 package com.byox.drawview.views;
 
+import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
+import android.support.v7.widget.CardView;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 
 import com.byox.drawview.R;
 import com.byox.drawview.dictionaries.DrawMove;
 import com.byox.drawview.enums.DrawingCapture;
 import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingTool;
+import com.byox.drawview.utils.BitmapUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,11 +59,13 @@ import java.util.List;
  */
 public class DrawView extends FrameLayout implements View.OnTouchListener {
 
-    // FINAL VARS
+    // CONSTANTS
     final String TAG = "DrawView";
 
     // LISTENER
     private OnDrawViewListener onDrawViewListener;
+    private ScaleGestureDetector mScaleGestureDetector;
+    private GestureDetector mGestureDetector;
 
     // VARS
     private int mDrawColor;
@@ -57,12 +78,37 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     private Typeface mFontFamily;
     private float mFontSize;
     private int mBackgroundColor;
+    private File mBackgroundImage;
+    private Bitmap mBackgroundImageBitmap;
+    private Rect mCanvasClipBounds;
+
+    private Bitmap mContentBitmap;
+    private Canvas mContentCanvas;
+
+    private boolean mZoomEnabled = false;
+    private float mZoomFactor = 1.0f;
+    private float mZoomCenterX = -1.0f;
+    private float mZoomCenterY = -1.0f;
+    private float mMaxZoomFactor = 8f;
+    private float mZoomRegionScale = 4f;
+    private float mZoomRegionScaleMin = 2f;
+    private float mZoomRegionScaleMax = 5f;
+    private boolean mFromZoomRegion = false;
+
+    private int mLastTouchEvent = -1;
 
     private DrawingMode mDrawingMode;
     private DrawingTool mDrawingTool;
 
     private List<DrawMove> mDrawMoveHistory;
     private int mDrawMoveHistoryIndex = -1;
+    private int mDrawMoveBackgroundIndex = -1;
+
+    private RectF mAuxRect;
+
+    // VIEWS
+    private CardView mZoomRegionCardView;
+    private ZoomRegionView mZoomRegionView;
 
     /**
      * Default constructor
@@ -121,45 +167,83 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      */
     @Override
     protected void onDraw(Canvas canvas) {
+        mContentBitmap.eraseColor(Color.TRANSPARENT);
+
+        if (isZoomEnabled()) {
+            canvas.save();
+            canvas.scale(mZoomFactor, mZoomFactor, mZoomCenterX, mZoomCenterY);
+        }
+
+        if (mDrawMoveBackgroundIndex != -1)
+            drawBackgroundImage(mDrawMoveHistory.get(mDrawMoveBackgroundIndex), mContentCanvas);
+
         for (int i = 0; i < mDrawMoveHistoryIndex + 1; i++) {
             DrawMove drawMove = mDrawMoveHistory.get(i);
-            switch (drawMove.getDrawingMode()) {
-                case DRAW:
-                    switch (drawMove.getDrawingTool()) {
-                        case PEN:
-                            if (drawMove.getDrawingPathList() != null &&
-                                    drawMove.getDrawingPathList().size() > 0)
-                                for (Path path : drawMove.getDrawingPathList())
-                                    canvas.drawPath(path, drawMove.getPaint());
-                            break;
-                        case LINE:
-                            canvas.drawLine(drawMove.getStartX(), drawMove.getStartY(),
-                                    drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
-                            break;
-                        case RECTANGLE:
-                            canvas.drawRect(drawMove.getStartX(), drawMove.getStartY(),
-                                    drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
-                            break;
-                        case CIRCLE:
-                            if (drawMove.getEndX() > drawMove.getStartX())
-                                canvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(),
-                                        drawMove.getEndX() - drawMove.getStartX(), drawMove.getPaint());
-                            else
-                                canvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(),
-                                        drawMove.getStartX() - drawMove.getEndX(), drawMove.getPaint());
-                            break;
-                    }
-                    break;
-                case TEXT:
-                    if (drawMove.getText() != null && !drawMove.getText().equals(""))
-                        canvas.drawText(drawMove.getText(), drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
-                    break;
-                case ERASER:
-                    if (drawMove.getDrawingPathList() != null &&
-                            drawMove.getDrawingPathList().size() > 0)
-                        for (Path path : drawMove.getDrawingPathList())
-                            canvas.drawPath(path, drawMove.getPaint());
-                    break;
+            if (drawMove.getDrawingMode() != null) {
+                switch (drawMove.getDrawingMode()) {
+                    case DRAW:
+                        switch (drawMove.getDrawingTool()) {
+                            case PEN:
+                                if (drawMove.getDrawingPathList() != null &&
+                                        drawMove.getDrawingPathList().size() > 0)
+                                    for (Path path : drawMove.getDrawingPathList()) {
+                                        mContentCanvas.drawPath(path, drawMove.getPaint());
+                                    }
+                                break;
+                            case LINE:
+                                mContentCanvas.drawLine(drawMove.getStartX(), drawMove.getStartY(),
+                                        drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
+                                break;
+                            case RECTANGLE:
+                                mContentCanvas.drawRect(drawMove.getStartX(), drawMove.getStartY(),
+                                        drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
+                                break;
+                            case CIRCLE:
+                                if (drawMove.getEndX() > drawMove.getStartX()) {
+                                    mContentCanvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(),
+                                            drawMove.getEndX() - drawMove.getStartX(), drawMove.getPaint());
+                                } else {
+                                    mContentCanvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(),
+                                            drawMove.getStartX() - drawMove.getEndX(), drawMove.getPaint());
+                                }
+                                break;
+                            case ELLIPSE:
+                                mAuxRect.set(drawMove.getEndX() - Math.abs(drawMove.getEndX() - drawMove.getStartX()),
+                                        drawMove.getEndY() - Math.abs(drawMove.getEndY() - drawMove.getStartY()),
+                                        drawMove.getEndX() + Math.abs(drawMove.getEndX() - drawMove.getStartX()),
+                                        drawMove.getEndY() + Math.abs(drawMove.getEndY() - drawMove.getStartY()));
+                                mContentCanvas.drawOval(mAuxRect, drawMove.getPaint());
+                                break;
+                        }
+                        break;
+                    case TEXT:
+                        if (drawMove.getText() != null && !drawMove.getText().equals("")) {
+                            mContentCanvas.drawText(drawMove.getText(), drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
+                        }
+                        break;
+                    case ERASER:
+                        if (drawMove.getDrawingPathList() != null &&
+                                drawMove.getDrawingPathList().size() > 0) {
+                            drawMove.getPaint().setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+                            for (Path path : drawMove.getDrawingPathList()) {
+                                mContentCanvas.drawPath(path, drawMove.getPaint());
+                            }
+                            drawMove.getPaint().setXfermode(null);
+                        }
+                        break;
+                }
+            }
+        }
+
+        canvas.getClipBounds(mCanvasClipBounds);
+
+        canvas.drawBitmap(mContentBitmap, 0, 0, null);
+
+        if (isZoomEnabled()) {
+            canvas.restore();
+
+            if (mZoomRegionView != null && !mFromZoomRegion) {
+                mZoomRegionView.drawZoomRegion(mContentBitmap, mCanvasClipBounds, 4);
             }
         }
 
@@ -175,59 +259,97 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      */
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
-        switch (motionEvent.getActionMasked()) {
-            case MotionEvent.ACTION_DOWN:
-                if (onDrawViewListener != null)
-                    onDrawViewListener.onStartDrawing();
-
-                if (mDrawMoveHistoryIndex >= -1 &&
-                        mDrawMoveHistoryIndex < mDrawMoveHistory.size() - 1)
-                    mDrawMoveHistory = mDrawMoveHistory.subList(0, mDrawMoveHistoryIndex + 1);
-
-                mDrawMoveHistory.add(DrawMove.newInstance()
-                        .setPaint(getNewPaintParams())
-                        .setStartX(motionEvent.getX()).setStartY(motionEvent.getY())
-                        .setEndX(motionEvent.getX()).setEndY(motionEvent.getY())
-                        .setDrawingMode(mDrawingMode).setDrawingTool(mDrawingTool));
-                mDrawMoveHistoryIndex++;
-
-                if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
-                    Path path = new Path();
-                    path.moveTo(motionEvent.getX(), motionEvent.getY());
-                    path.lineTo(motionEvent.getX(), motionEvent.getY());
-
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setDrawingPathList(new ArrayList<Path>());
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList().add(path);
-                }
-                break;
-            case MotionEvent.ACTION_MOVE:
-                mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setEndX(motionEvent.getX()).setEndY(motionEvent.getY());
-
-                if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList()
-                            .get(mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList().size() - 1)
-                            .lineTo(motionEvent.getX(), motionEvent.getY());
-                }
-                invalidate();
-                break;
-            case MotionEvent.ACTION_UP:
-                mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setEndX(motionEvent.getX()).setEndY(motionEvent.getY());
-
-                if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
-                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList()
-                            .get(mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList().size() - 1)
-                            .lineTo(motionEvent.getX(), motionEvent.getY());
-                }
-
-                if (onDrawViewListener != null && mDrawingMode == DrawingMode.TEXT)
-                    onDrawViewListener.onRequestText();
-
-                if (onDrawViewListener != null)
-                    onDrawViewListener.onEndDrawing();
-
-                invalidate();
-                break;
+        if (mZoomEnabled) {
+            mScaleGestureDetector.onTouchEvent(motionEvent);
+            mGestureDetector.onTouchEvent(motionEvent);
         }
+
+        float touchX = motionEvent.getX() / mZoomFactor + mCanvasClipBounds.left;
+        float touchY = motionEvent.getY() / mZoomFactor + mCanvasClipBounds.top;
+
+        if (motionEvent.getPointerCount() == 1) {
+            switch (motionEvent.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    mLastTouchEvent = MotionEvent.ACTION_DOWN;
+
+                    if (onDrawViewListener != null)
+                        onDrawViewListener.onStartDrawing();
+
+                    if (mDrawMoveHistoryIndex >= -1 &&
+                            mDrawMoveHistoryIndex < mDrawMoveHistory.size() - 1)
+                        mDrawMoveHistory = mDrawMoveHistory.subList(0, mDrawMoveHistoryIndex + 1);
+
+                    mDrawMoveHistory.add(DrawMove.newInstance()
+                            .setPaint(getNewPaintParams())
+                            .setStartX(touchX).setStartY(touchY)
+                            .setEndX(touchX).setEndY(touchY)
+                            .setDrawingMode(mDrawingMode).setDrawingTool(mDrawingTool));
+
+//                    Paint currentPaint = mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getPaint();
+//                    currentPaint.setStrokeWidth(currentPaint.getStrokeWidth() / mZoomFactor);
+//                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setPaint(currentPaint);
+
+                    mDrawMoveHistoryIndex++;
+
+                    if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
+                        Path path = new Path();
+                        path.moveTo(touchX, touchY);
+                        path.lineTo(touchX, touchY);
+
+                        mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setDrawingPathList(new ArrayList<Path>());
+                        mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList().add(path);
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if ((mLastTouchEvent == MotionEvent.ACTION_DOWN ||
+                            mLastTouchEvent == MotionEvent.ACTION_MOVE)) {
+                        mLastTouchEvent = MotionEvent.ACTION_MOVE;
+
+                        if (mDrawMoveHistory.size() > 0) {
+                            mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setEndX(touchX).setEndY(touchY);
+
+                            if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
+                                mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList()
+                                        .get(mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList().size() - 1)
+                                        .lineTo(touchX, touchY);
+                            }
+                        }
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    if (mLastTouchEvent == MotionEvent.ACTION_DOWN) {
+                        if (mDrawMoveHistory.size() > 0) {
+                            mDrawMoveHistory.remove(mDrawMoveHistory.size() - 1);
+                            mDrawMoveHistoryIndex--;
+                        }
+                    } else if (mLastTouchEvent == MotionEvent.ACTION_MOVE) {
+                        mLastTouchEvent = -1;
+                        if (mDrawMoveHistory.size() > 0) {
+                            mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setEndX(motionEvent.getX()).setEndY(motionEvent.getY());
+
+                            if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
+                                mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList()
+                                        .get(mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList().size() - 1)
+                                        .lineTo(touchX, touchY);
+                            }
+                        }
+                    }
+
+                    if (onDrawViewListener != null && mDrawingMode == DrawingMode.TEXT)
+                        onDrawViewListener.onRequestText();
+
+                    if (onDrawViewListener != null)
+                        onDrawViewListener.onEndDrawing();
+
+                    break;
+                default:
+                    return false;
+            }
+        } else {
+            mLastTouchEvent = -1;
+        }
+
+        invalidate();
         return true;
     }
 
@@ -238,7 +360,72 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      */
     private void initVars() {
         mDrawMoveHistory = new ArrayList<>();
+        mScaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleGestureListener());
+        mGestureDetector = new GestureDetector(getContext(), new GestureListener());
+        mCanvasClipBounds = new Rect();
+        mAuxRect = new RectF();
+
         setOnTouchListener(this);
+
+        getViewTreeObserver().addOnGlobalLayoutListener(
+                new ViewTreeObserver.OnGlobalLayoutListener() {
+
+                    @SuppressLint("NewApi")
+                    @SuppressWarnings("deprecation")
+                    @Override
+                    public void onGlobalLayout() {
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+                            getViewTreeObserver()
+                                    .removeGlobalOnLayoutListener(this);
+                        } else {
+                            getViewTreeObserver()
+                                    .removeOnGlobalLayoutListener(this);
+                        }
+                        initZoomRegionView();
+                    }
+                });
+    }
+
+    /**
+     * Init the ZoomRegionView for navigate into image when user zoom in
+     */
+    private void initZoomRegionView() {
+        if (mZoomRegionView == null) {
+
+            Bitmap init = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
+            mContentBitmap = init.copy(Bitmap.Config.ARGB_8888, true);
+            init.recycle();
+            mContentCanvas = new Canvas(mContentBitmap);
+
+            FrameLayout.LayoutParams layoutParams = new LayoutParams(getWidth() / 4, getHeight() / 4,
+                    Gravity.TOP | Gravity.END);
+            layoutParams.setMargins(12, 12, 12, 12);
+            mZoomRegionCardView = new CardView(getContext());
+            mZoomRegionCardView.setLayoutParams(layoutParams);
+            mZoomRegionCardView.setPreventCornerOverlap(true);
+            mZoomRegionCardView.setRadius(0f);
+            mZoomRegionCardView.setUseCompatPadding(true);
+            mZoomRegionCardView.setVisibility(View.INVISIBLE);
+
+            CardView.LayoutParams childLayoutParams = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT);
+            mZoomRegionView = new ZoomRegionView(getContext());
+            mZoomRegionView.setLayoutParams(childLayoutParams);
+            mZoomRegionView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            mZoomRegionView.setOnZoomRegionListener(new ZoomRegionView.OnZoomRegionListener() {
+                @Override
+                public void onZoomRegionMoved(Rect newRect) {
+                    mFromZoomRegion = true;
+                    mZoomCenterX = newRect.centerX() * 4;
+                    mZoomCenterY = newRect.centerY() * 4;
+
+                    invalidate();
+                }
+            });
+
+            mZoomRegionCardView.addView(mZoomRegionView);
+            addView(mZoomRegionCardView);
+        }
     }
 
     /**
@@ -281,15 +468,27 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                 mFontFamily = Typeface.SERIF;
             mFontSize = typedArray.getInteger(R.styleable.DrawView_dv_draw_font_size, 12);
             if (getBackground() != null)
-                mBackgroundColor = ((ColorDrawable) getBackground()).getColor();
+                try {
+                    mBackgroundColor = ((ColorDrawable) getBackground()).getColor();
+                } catch (Exception e){
+                    e.printStackTrace();
+                    setBackgroundColor(Color.TRANSPARENT);
+                    mBackgroundColor = ((ColorDrawable) getBackground()).getColor();
+                    setBackgroundResource(R.drawable.drawable_transparent_pattern);
+                }
             else {
-                setBackgroundColor(Color.WHITE);
+                setBackgroundColor(Color.TRANSPARENT);
                 mBackgroundColor = ((ColorDrawable) getBackground()).getColor();
+                setBackgroundResource(R.drawable.drawable_transparent_pattern);
             }
 
 
             mDrawingTool = DrawingTool.values()[typedArray.getInteger(R.styleable.DrawView_dv_draw_tool, 0)];
             mDrawingMode = DrawingMode.values()[typedArray.getInteger(R.styleable.DrawView_dv_draw_mode, 0)];
+            mZoomEnabled = typedArray.getBoolean(R.styleable.DrawView_dv_draw_enable_zoom, false);
+            mZoomRegionScale = typedArray.getFloat(R.styleable.DrawView_dv_draw_zoomregion_scale, mZoomRegionScale);
+            mZoomRegionScaleMin = typedArray.getFloat(R.styleable.DrawView_dv_draw_zoomregion_minscale, mZoomRegionScaleMin);
+            mZoomRegionScaleMax = typedArray.getFloat(R.styleable.DrawView_dv_draw_zoomregion_maxscale, mZoomRegionScaleMax);
         } finally {
             typedArray.recycle();
         }
@@ -397,6 +596,14 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         if (mDrawMoveHistoryIndex > -1 &&
                 mDrawMoveHistory.size() > 0) {
             mDrawMoveHistoryIndex--;
+
+            mDrawMoveBackgroundIndex = -1;
+            for (int i = 0; i < mDrawMoveHistoryIndex + 1; i++) {
+                if (mDrawMoveHistory.get(i).getBackgroundImage() != null) {
+                    mDrawMoveBackgroundIndex = i;
+                }
+            }
+
             invalidate();
             return true;
         }
@@ -422,6 +629,14 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     public boolean redo() {
         if (mDrawMoveHistoryIndex <= mDrawMoveHistory.size() - 1) {
             mDrawMoveHistoryIndex++;
+
+            mDrawMoveBackgroundIndex = -1;
+            for (int i = 0; i < mDrawMoveHistoryIndex + 1; i++) {
+                if (mDrawMoveHistory.get(i).getBackgroundImage() != null) {
+                    mDrawMoveBackgroundIndex = i;
+                }
+            }
+
             invalidate();
             return true;
         }
@@ -445,15 +660,12 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return Object in form of bitmap or byte array
      */
     public Object createCapture(DrawingCapture drawingCapture) {
-        setDrawingCacheEnabled(false);
-        setDrawingCacheEnabled(true);
-
         switch (drawingCapture) {
             case BITMAP:
-                return getDrawingCache(true);
+                return mContentBitmap;
             case BYTES:
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                getDrawingCache(true).compress(Bitmap.CompressFormat.PNG, 100, stream);
+                mContentBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
                 return stream.toByteArray();
         }
         return null;
@@ -508,6 +720,10 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         return mBackgroundColor;
     }
 
+    public File getBackgroundImage() {
+        return mBackgroundImage;
+    }
+
     public Paint.Style getPaintStyle() {
         return mPaintStyle;
     }
@@ -530,6 +746,26 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
 
     public boolean isDither() {
         return mDither;
+    }
+
+    public boolean isZoomEnabled() {
+        return mZoomEnabled;
+    }
+
+    public float getMaxZoomFactor() {
+        return mMaxZoomFactor;
+    }
+
+    public float getZoomRegionScale() {
+        return mZoomRegionScale;
+    }
+
+    public float getZoomRegionScaleMin() {
+        return mZoomRegionScaleMin;
+    }
+
+    public float getZoomRegionScaleMax() {
+        return mZoomRegionScaleMax;
     }
 
     // SETTERS
@@ -683,6 +919,227 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     public DrawView setDither(boolean dither) {
         this.mDither = dither;
         return this;
+    }
+
+    /**
+     * Enables the zoom
+     *
+     * @param zoomEnabled Value that indicates if the Zoom is enabled
+     * @return this instance of the view
+     */
+    public DrawView setZoomEnabled(boolean zoomEnabled) {
+        this.mZoomEnabled = zoomEnabled;
+        return this;
+    }
+
+    /**
+     * Set the background image for the DrawView
+     *
+     * @param backgroundImage File that contains the background image
+     * @return this instance of the view
+     */
+    public DrawView setBackgroundImage(File backgroundImage) {
+        if (onDrawViewListener != null)
+            onDrawViewListener.onStartDrawing();
+
+        if (mDrawMoveHistoryIndex >= -1 &&
+                mDrawMoveHistoryIndex < mDrawMoveHistory.size() - 1)
+            mDrawMoveHistory = mDrawMoveHistory.subList(0, mDrawMoveHistoryIndex + 1);
+
+        mDrawMoveHistory.add(DrawMove.newInstance()
+                .setBackgroundImage(backgroundImage));
+        mDrawMoveHistoryIndex++;
+
+        mDrawMoveBackgroundIndex = mDrawMoveHistoryIndex;
+
+        if (onDrawViewListener != null)
+            onDrawViewListener.onEndDrawing();
+
+        invalidate();
+
+        return this;
+    }
+
+    /**
+     * Set the max zoom factor of the DrawView
+     *
+     * @param maxZoomFactor The max zoom factor target
+     * @return this instance of the view
+     */
+    public DrawView setMaxZoomFactor(float maxZoomFactor) {
+        this.mMaxZoomFactor = maxZoomFactor;
+        return this;
+    }
+
+    /**
+     * Sets the ZoomRegionView scale factor
+     *
+     * @param zoomRegionScale ZoomRegionView scale factor (DrawView size / scale)
+     * @return this instance of the view
+     */
+    public DrawView setZoomRegionScale(float zoomRegionScale) {
+        this.mZoomRegionScale = zoomRegionScale;
+        return this;
+    }
+
+    /**
+     * Sets the ZoomRegionView minimum scale factor
+     *
+     * @param zoomRegionScaleMin ZoomRegionView scale factor minimum
+     * @return this instance of the view
+     */
+    public DrawView setZoomRegionScaleMin(float zoomRegionScaleMin) {
+        this.mZoomRegionScaleMin = zoomRegionScaleMin;
+        return this;
+    }
+
+    /**
+     * Sets the ZoomRegionView maximum scale factor
+     *
+     * @param zoomRegionScaleMax ZoomRegionView scale factor maximum
+     * @return this instance of view
+     */
+    public DrawView setZoomRegionScaleMax(float zoomRegionScaleMax) {
+        this.mZoomRegionScaleMax = zoomRegionScaleMax;
+        return this;
+    }
+
+    // PRIVATE METHODS
+
+    /**
+     * Draw the background image on DrawViewCanvas
+     *
+     * @param drawMove the DrawMove that contains the background image
+     * @param canvas   tha DrawView canvas
+     */
+    private void drawBackgroundImage(DrawMove drawMove, Canvas canvas) {
+        if (this.mBackgroundImage == null) {
+            this.mBackgroundImage = drawMove.getBackgroundImage();
+            this.mBackgroundImageBitmap = BitmapUtils.GetBitmapForDrawView(this, this.mBackgroundImage, 50, new Matrix());
+        } else if (!this.mBackgroundImage.getAbsolutePath().equals(drawMove.getBackgroundImage().getAbsolutePath())) {
+            this.mBackgroundImage = drawMove.getBackgroundImage();
+            this.mBackgroundImageBitmap = BitmapUtils.GetBitmapForDrawView(this, this.mBackgroundImage, 50, new Matrix());
+        }
+
+        int centreX = (getWidth() - mBackgroundImageBitmap.getWidth()) / 2;
+        int centreY = (getHeight() - mBackgroundImageBitmap.getHeight()) / 2;
+        canvas.drawColor(mBackgroundColor);
+        canvas.drawBitmap(this.mBackgroundImageBitmap, centreX, centreY, null);
+    }
+
+    /**
+     * Shows or hides ZoomRegionView
+     *
+     * @param visibility the ZoomRegionView visibility target
+     */
+    private void showHideZoomRegionView(final int visibility) {
+        if (mZoomRegionCardView.getAnimation() == null) {
+            AlphaAnimation alphaAnimation = null;
+
+            if (visibility == INVISIBLE && mZoomRegionCardView.getVisibility() == VISIBLE)
+                alphaAnimation = new AlphaAnimation(1f, 0f);
+            else if (visibility == VISIBLE && mZoomRegionCardView.getVisibility() == INVISIBLE)
+                alphaAnimation = new AlphaAnimation(0f, 1f);
+
+            if (alphaAnimation != null) {
+                alphaAnimation.setDuration(300);
+                alphaAnimation.setInterpolator(new AccelerateDecelerateInterpolator());
+                alphaAnimation.setAnimationListener(new Animation.AnimationListener() {
+                    @Override
+                    public void onAnimationStart(Animation animation) {
+                        if (visibility == VISIBLE)
+                            mZoomRegionCardView.setVisibility(VISIBLE);
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animation animation) {
+                        if (visibility == INVISIBLE)
+                            mZoomRegionCardView.setVisibility(INVISIBLE);
+
+                        mZoomRegionCardView.setAnimation(null);
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animation animation) {
+
+                    }
+                });
+
+                mZoomRegionCardView.startAnimation(alphaAnimation);
+            }
+        }
+    }
+
+    // SCALE
+    private class ScaleGestureListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
+        @Override
+        public boolean onScale(ScaleGestureDetector detector) {
+            if (mZoomEnabled) {
+                mFromZoomRegion = false;
+                mZoomFactor *= detector.getScaleFactor();
+                mZoomFactor = Math.max(1f, Math.min(mZoomFactor, mMaxZoomFactor));
+                mZoomFactor = mZoomFactor > mMaxZoomFactor ? mMaxZoomFactor : mZoomFactor < 1f ? 1f : mZoomFactor;
+                mZoomCenterX = getWidth() - detector.getFocusX();
+                mZoomCenterY = getHeight() - detector.getFocusY();
+
+                if (mZoomFactor > 1f)
+                    showHideZoomRegionView(VISIBLE);
+                else
+                    showHideZoomRegionView(INVISIBLE);
+
+                invalidate();
+            }
+
+            return false;
+        }
+    }
+
+    private class GestureListener extends GestureDetector.SimpleOnGestureListener {
+        @Override
+        public boolean onDoubleTap(final MotionEvent e) {
+            if (mZoomEnabled) {
+                mFromZoomRegion = false;
+                int animationOption = -1;
+
+                if (mZoomFactor >= 1f && mZoomFactor < mMaxZoomFactor)
+                    animationOption = 0;
+                else if (mZoomFactor <= mMaxZoomFactor && mZoomFactor > 1f)
+                    animationOption = 1;
+
+                if (animationOption != -1) {
+                    ValueAnimator valueAnimator = null;
+
+                    if (animationOption == 0)
+                        valueAnimator = ValueAnimator.ofFloat(mZoomFactor, mMaxZoomFactor);
+                    else {
+                        float distance = mMaxZoomFactor - mZoomFactor;
+                        valueAnimator = ValueAnimator.ofFloat(mZoomFactor, distance);
+                    }
+
+                    valueAnimator.setDuration(300);
+                    valueAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
+                    valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                        @Override
+                        public void onAnimationUpdate(ValueAnimator animation) {
+                            mZoomFactor = (float) animation.getAnimatedValue();
+//                            Log.i(TAG, "Current Zoom: " + mZoomFactor);
+                            mZoomFactor = mZoomFactor < 1f ? 1 : mZoomFactor;
+                            mZoomCenterX = e.getX() / mZoomFactor + mCanvasClipBounds.left;
+                            mZoomCenterY = e.getY() / mZoomFactor + mCanvasClipBounds.top;
+
+                            if (mZoomFactor > 1f)
+                                mZoomRegionCardView.setVisibility(VISIBLE);
+                            else
+                                mZoomRegionCardView.setVisibility(INVISIBLE);
+
+                            invalidate();
+                        }
+                    });
+                    valueAnimator.start();
+                }
+            }
+            return true;
+        }
     }
 
     // LISTENER

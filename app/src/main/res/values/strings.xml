@@ -7,4 +7,7 @@
 
     <string name="undo">Undo</string>
     <string name="redo">Redo</string>
+
+    <!-- ADS -->
+    <string name="banner_ad_unit_id">ca-app-pub-6238951090454835/7400289908</string>
 </resources>

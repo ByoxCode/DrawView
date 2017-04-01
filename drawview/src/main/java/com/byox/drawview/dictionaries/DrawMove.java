@@ -6,6 +6,7 @@ import android.graphics.Path;
 import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingTool;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -22,14 +23,16 @@ public class DrawMove {
     private static DrawMove mSingleton;
 
     private Paint mPaint;
-    private DrawingMode mDrawingMode;
-    private DrawingTool mDrawingTool;
+    private DrawingMode mDrawingMode = null;
+    private DrawingTool mDrawingTool = null;
     private List<Path> mDrawingPathList;
     private float mStartX, mStartY, mEndX, mEndY;
     private String mText;
+    private File mBackgroundImage;
 
     // METHODS
-    public DrawMove(){}
+    public DrawMove() {
+    }
 
     public static DrawMove newInstance() {
         mSingleton = new DrawMove();
@@ -74,67 +77,79 @@ public class DrawMove {
         return mText;
     }
 
+    public File getBackgroundImage() {
+        return mBackgroundImage;
+    }
+
     // SETTERS
+
     public DrawMove setPaint(Paint paint) {
-        this.mPaint = paint;
-        if (mSingleton != null)
+        if (mSingleton != null) {
+            mSingleton.mPaint = paint;
             return mSingleton;
-        else throw new RuntimeException("Create new instance of DrawMove first!");
+        } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setDrawingMode(DrawingMode drawingMode) {
-        this.mDrawingMode = drawingMode;
-        if (mSingleton != null)
+        if (mSingleton != null) {
+            mSingleton.mDrawingMode = drawingMode;
             return mSingleton;
-        else throw new RuntimeException("Create new instance of DrawMove first!");
+        } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setDrawingTool(DrawingTool drawingTool) {
-        this.mDrawingTool = drawingTool;
-        if (mSingleton != null)
+        if (mSingleton != null) {
+            mSingleton.mDrawingTool = drawingTool;
             return mSingleton;
-        else throw new RuntimeException("Create new instance of DrawMove first!");
+        } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setDrawingPathList(List<Path> drawingPathList) {
-        this.mDrawingPathList = drawingPathList;
-        if (mSingleton != null)
+        if (mSingleton != null) {
+            mSingleton.mDrawingPathList = drawingPathList;
             return mSingleton;
-        else throw new RuntimeException("Create new instance of DrawMove first!");
+        } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setStartX(float startX) {
-        this.mStartX = startX;
-        if (mSingleton != null)
+        if (mSingleton != null) {
+            mSingleton.mStartX = startX;
             return mSingleton;
-        else throw new RuntimeException("Create new instance of DrawMove first!");
+        } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setStartY(float startY) {
-        this.mStartY = startY;
-        if (mSingleton != null)
+        if (mSingleton != null) {
+            mSingleton.mStartY = startY;
             return mSingleton;
-        else throw new RuntimeException("Create new instance of DrawMove first!");
+        } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setEndX(float endX) {
-        this.mEndX = endX;
-        if (mSingleton != null)
+        if (mSingleton != null) {
+            mSingleton.mEndX = endX;
             return mSingleton;
-        else throw new RuntimeException("Create new instance of DrawMove first!");
+        } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setEndY(float endY) {
-        this.mEndY = endY;
-        if (mSingleton != null)
+        if (mSingleton != null) {
+            mSingleton.mEndY = endY;
             return mSingleton;
-        else throw new RuntimeException("Create new instance of DrawMove first!");
+        } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawMove setText(String text) {
-        this.mText = text;
-        if (mSingleton != null)
+        if (mSingleton != null) {
+            mSingleton.mText = text;
             return mSingleton;
-        else throw new RuntimeException("Create new instance of DrawMove first!");
+        } else throw new RuntimeException("Create new instance of DrawMove first!");
+    }
+
+    public DrawMove setBackgroundImage(File backgroundImage) {
+        if (mSingleton != null) {
+            mSingleton.mBackgroundImage = backgroundImage;
+            return mSingleton;
+        } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/content_main"
@@ -13,16 +13,30 @@
         android:id="@+id/draw_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginBottom="80dp"
         app:dv_draw_alpha="255"
         app:dv_draw_anti_alias="true"
         app:dv_draw_color="@color/colorAccent"
         app:dv_draw_corners="round"
         app:dv_draw_dither="true"
+        app:dv_draw_enable_zoom="true"
         app:dv_draw_font_family="default_font"
         app:dv_draw_font_size="12"
+        app:dv_draw_max_zoom_factor="8"
         app:dv_draw_mode="draw"
         app:dv_draw_style="stroke"
         app:dv_draw_tool="pen"
-        app:dv_draw_width="4" />
+        app:dv_draw_width="4"
+        app:dv_draw_zoomregion_maxscale="5"
+        app:dv_draw_zoomregion_minscale="2"
+        app:dv_draw_zoomregion_scale="4"/>
 
-</RelativeLayout>
+    <com.google.android.gms.ads.NativeExpressAdView
+        android:id="@+id/adView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        app:adSize="360x80"
+        app:adUnitId="@string/banner_ad_unit_id" />
+
+</FrameLayout>

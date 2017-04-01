@@ -5,4 +5,5 @@
     <color name="colorAccent">#0091EA</color>
 
     <color name="colorWhiteSemitrans">#AFFF</color>
+    <color name="colorBlackSemitrans">#A000</color>
 </resources>
