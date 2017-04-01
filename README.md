@@ -12,6 +12,7 @@ Undo or redo actions it is possible with DrawView.
 ![undo redo gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_17.57.50.gif)
 ![text tool gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.00.25.gif)
 ![save bitmap gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.03.14.gif)
+![zoom gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.03.14.gif)
 
 View example [APK](https://play.google.com/store/apps/details?id=com.byox.drawviewproject)
 
@@ -20,14 +21,14 @@ Usage
 
 With Gradle:
 ```groovy
-  compile 'com.byox.drawview:drawview:1.0.4'
+  compile 'com.byox.drawview:drawview:1.2.4'
 ```
 or Maven:
 ```xml
 <dependency>
   <groupId>com.byox.drawview</groupId>
   <artifactId>drawview</artifactId>
-  <version>1.0.2</version>
+  <version>1.2.4</version>
   <type>pom</type>
 </dependency>
 ```
@@ -46,12 +47,17 @@ Add DrawView to your layout
         app:dv_draw_color="@color/colorAccent"
         app:dv_draw_corners="round"
         app:dv_draw_dither="true"
+        app:dv_draw_enable_zoom="true"
         app:dv_draw_font_family="default_font"
         app:dv_draw_font_size="12"
+        app:dv_draw_max_zoom_factor="8"
         app:dv_draw_mode="draw"
         app:dv_draw_style="stroke"
         app:dv_draw_tool="pen"
-        app:dv_draw_width="4" />
+        app:dv_draw_width="4"
+        app:dv_draw_zoomregion_maxscale="5"
+        app:dv_draw_zoomregion_minscale="2"
+        app:dv_draw_zoomregion_scale="4" />
 ```
 
 Attributes
