@@ -7,6 +7,7 @@ package com.byox.drawview.enums;
 public enum DrawingTool {
     PEN,
     LINE,
+    ARROW,
     RECTANGLE,
     CIRCLE,
     ELLIPSE

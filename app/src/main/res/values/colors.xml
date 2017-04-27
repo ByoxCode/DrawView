@@ -4,6 +4,8 @@
     <color name="colorPrimaryDark">#004D40</color>
     <color name="colorAccent">#0091EA</color>
 
+    <color name="white">#FFF</color>
+
     <color name="colorWhiteSemitrans">#AFFF</color>
     <color name="colorBlackSemitrans">#A000</color>
 </resources>

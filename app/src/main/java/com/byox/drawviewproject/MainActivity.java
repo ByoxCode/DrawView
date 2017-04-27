@@ -379,7 +379,7 @@ public class MainActivity extends AppCompatActivity {
     private void changeDrawTool(){
         SelectChoiceDialog selectChoiceDialog =
                 SelectChoiceDialog.newInstance("Select a draw tool",
-                        "PEN", "LINE", "RECTANGLE", "CIRCLE", "ELLIPSE");
+                        "PEN", "LINE", "ARROW", "RECTANGLE", "CIRCLE", "ELLIPSE");
         selectChoiceDialog.setOnChoiceDialogListener(new SelectChoiceDialog.OnChoiceDialogListener() {
             @Override
             public void onChoiceSelected(int position) {
@@ -426,7 +426,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void saveDraw(){
         SaveBitmapDialog saveBitmapDialog = SaveBitmapDialog.newInstance();
-        saveBitmapDialog.setPreviewBitmap((Bitmap) mDrawView.createCapture(DrawingCapture.BITMAP));
+        Object[] createCaptureResponse = mDrawView.createCapture(DrawingCapture.BITMAP);
+        saveBitmapDialog.setPreviewBitmap((Bitmap) createCaptureResponse[0]);
+        saveBitmapDialog.setPreviewFormat(String.valueOf(createCaptureResponse[1]));
         saveBitmapDialog.setOnSaveBitmapListener(new SaveBitmapDialog.OnSaveBitmapListener() {
             @Override
             public void onSaveBitmapCompleted() {

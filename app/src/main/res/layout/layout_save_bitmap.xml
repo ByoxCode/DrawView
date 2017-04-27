@@ -6,8 +6,10 @@
 
     <ImageView
         android:id="@+id/iv_capture_preview"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="248dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_margin="12dp"
         android:background="@drawable/drawable_transparent_dialog_pattern"
         android:scaleType="centerInside" />
 

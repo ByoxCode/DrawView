@@ -77,7 +77,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     private Paint.Cap mLineCap;
     private Typeface mFontFamily;
     private float mFontSize;
-    private int mBackgroundColor;
+    private int mBackgroundColor = -1;
     private File mBackgroundImage;
     private Bitmap mBackgroundImageBitmap;
     private Rect mCanvasClipBounds;
@@ -105,6 +105,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     private int mDrawMoveBackgroundIndex = -1;
 
     private RectF mAuxRect;
+    private PorterDuffXfermode mEraserXefferMode;
+    private Paint mBackgroundPaint;
 
     // VIEWS
     private CardView mZoomRegionCardView;
@@ -174,6 +176,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             canvas.scale(mZoomFactor, mZoomFactor, mZoomCenterX, mZoomCenterY);
         }
 
+        // Draw canvas background
+        mContentCanvas.drawRect(0, 0, mContentBitmap.getWidth(), mContentBitmap.getHeight(), mBackgroundPaint);
+
         if (mDrawMoveBackgroundIndex != -1)
             drawBackgroundImage(mDrawMoveHistory.get(mDrawMoveBackgroundIndex), mContentCanvas);
 
@@ -193,6 +198,25 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                             case LINE:
                                 mContentCanvas.drawLine(drawMove.getStartX(), drawMove.getStartY(),
                                         drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
+                                break;
+                            case ARROW:
+                                mContentCanvas.drawLine(drawMove.getStartX(), drawMove.getStartY(),
+                                        drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
+                                float angle = (float) Math.toDegrees(Math.atan2(drawMove.getEndY() - drawMove.getStartY(),
+                                        drawMove.getEndX() - drawMove.getStartX())) - 90;
+                                angle = angle < 0 ? angle + 360 : angle;
+                                float middleWidth = 8f + drawMove.getPaint().getStrokeWidth();
+                                float arrowHeadLarge = 30f + drawMove.getPaint().getStrokeWidth();
+
+                                mContentCanvas.save();
+                                mContentCanvas.translate(drawMove.getEndX(), drawMove.getEndY());
+                                mContentCanvas.rotate(angle);
+                                mContentCanvas.drawLine(0f, 0f, middleWidth, 0f, drawMove.getPaint());
+                                mContentCanvas.drawLine(middleWidth, 0f, 0f, arrowHeadLarge, drawMove.getPaint());
+                                mContentCanvas.drawLine(0f, arrowHeadLarge, -middleWidth, 0f, drawMove.getPaint());
+                                mContentCanvas.drawLine(-middleWidth, 0f, 0f, 0f, drawMove.getPaint());
+                                mContentCanvas.restore();
+
                                 break;
                             case RECTANGLE:
                                 mContentCanvas.drawRect(drawMove.getStartX(), drawMove.getStartY(),
@@ -224,7 +248,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                     case ERASER:
                         if (drawMove.getDrawingPathList() != null &&
                                 drawMove.getDrawingPathList().size() > 0) {
-                            drawMove.getPaint().setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+                            drawMove.getPaint().setXfermode(mEraserXefferMode);
                             for (Path path : drawMove.getDrawingPathList()) {
                                 mContentCanvas.drawPath(path, drawMove.getPaint());
                             }
@@ -364,6 +388,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         mGestureDetector = new GestureDetector(getContext(), new GestureListener());
         mCanvasClipBounds = new Rect();
         mAuxRect = new RectF();
+        mEraserXefferMode = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
 
         setOnTouchListener(this);
 
@@ -470,6 +495,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             if (getBackground() != null)
                 try {
                     mBackgroundColor = ((ColorDrawable) getBackground()).getColor();
+                    setBackgroundColor(Color.TRANSPARENT);
                 } catch (Exception e){
                     e.printStackTrace();
                     setBackgroundColor(Color.TRANSPARENT);
@@ -482,6 +508,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                 setBackgroundResource(R.drawable.drawable_transparent_pattern);
             }
 
+            mBackgroundPaint = new Paint();
+            mBackgroundPaint.setStyle(Paint.Style.FILL);
+            mBackgroundPaint.setColor(mBackgroundColor != -1 ? mBackgroundColor : Color.TRANSPARENT);
 
             mDrawingTool = DrawingTool.values()[typedArray.getInteger(R.styleable.DrawView_dv_draw_tool, 0)];
             mDrawingMode = DrawingMode.values()[typedArray.getInteger(R.styleable.DrawView_dv_draw_mode, 0)];
@@ -576,6 +605,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         if (mDrawMoveHistory != null) {
             mDrawMoveHistory.clear();
             mDrawMoveHistoryIndex = -1;
+            mDrawMoveBackgroundIndex = -1;
             invalidate();
 
             if (onDrawViewListener != null)
@@ -659,16 +689,26 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @param drawingCapture
      * @return Object in form of bitmap or byte array
      */
-    public Object createCapture(DrawingCapture drawingCapture) {
+    public Object[] createCapture(DrawingCapture drawingCapture) {
+        Object[] result = null;
         switch (drawingCapture) {
             case BITMAP:
-                return mContentBitmap;
+                result = new Object[2];
+                result[0] = mContentBitmap;
+                result[1] = mBackgroundPaint.getColor() == Color.TRANSPARENT ? "PNG" : "JPG";
+                break;
             case BYTES:
+                result = new Object[2];
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                mContentBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-                return stream.toByteArray();
+                mContentBitmap.compress(
+                        mBackgroundPaint.getColor() == Color.TRANSPARENT ?
+                                Bitmap.CompressFormat.PNG: Bitmap.CompressFormat.JPEG,
+                                100, stream);
+                result[0] = stream.toByteArray();
+                result[1] = mBackgroundPaint.getColor() == Color.TRANSPARENT ? "PNG" : "JPG";
+                break;
         }
-        return null;
+        return result;
     }
 
     /**

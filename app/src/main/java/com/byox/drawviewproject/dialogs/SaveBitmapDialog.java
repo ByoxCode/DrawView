@@ -32,6 +32,7 @@ public class SaveBitmapDialog extends DialogFragment {
 
     // VARS
     private Bitmap mPreviewBitmap;
+    private String mPreviewFormat;
 
     public SaveBitmapDialog(){}
 
@@ -48,7 +49,7 @@ public class SaveBitmapDialog extends DialogFragment {
         final TextInputEditText textInputEditText = (TextInputEditText) view.findViewById(R.id.et_file_name);
 
         final File filePath = Environment.getExternalStorageDirectory();
-        final String[] fileName = {"DrawViewCapture.jpg"};
+        final String[] fileName = {"DrawViewCapture." + mPreviewFormat.toLowerCase()};
 
         if (mPreviewBitmap != null)
             imageView.setImageBitmap(mPreviewBitmap);
@@ -72,14 +73,17 @@ public class SaveBitmapDialog extends DialogFragment {
                     public void onClick(DialogInterface dialogInterface, int i) {
                         try {
                             if (!fileName[0].contains("."))
-                                fileName[0] = fileName[0] + ".jpg";
+                                fileName[0] = fileName[0] + "." + mPreviewFormat.toLowerCase();
                             textInputEditText.setText(fileName[0]);
 
                             File image = new File(filePath + File.separator + fileName[0]);
                             image.createNewFile();
 
                             FileOutputStream fileOutputStream = new FileOutputStream(image);
-                            mPreviewBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+                            mPreviewBitmap.compress(
+                                    mPreviewFormat.toLowerCase().equals("JPG") ?
+                                            Bitmap.CompressFormat.JPEG :
+                                            Bitmap.CompressFormat.PNG, 100, fileOutputStream);
 
                             if (onSaveBitmapListener != null)
                                 onSaveBitmapListener.onSaveBitmapCompleted();
@@ -106,6 +110,10 @@ public class SaveBitmapDialog extends DialogFragment {
     // METHODS
     public void setPreviewBitmap(Bitmap bitmap){
         this.mPreviewBitmap = bitmap;
+    }
+
+    public void setPreviewFormat(String previewFormat){
+        this.mPreviewFormat = previewFormat;
     }
 
     // LISTENER
