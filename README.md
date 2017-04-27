@@ -12,7 +12,7 @@ Undo or redo actions it is possible with DrawView.
 ![undo redo gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_17.57.50.gif)
 ![text tool gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.00.25.gif)
 ![save bitmap gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.03.14.gif)
-![zoom gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.03.14.gif)
+![zoom gif](https://github.com/ByoxCode/DrawView/blob/master/2017.04.01_04.53.15.gif)
 
 View example [APK](https://play.google.com/store/apps/details?id=com.byox.drawviewproject)
 
@@ -21,14 +21,14 @@ Usage
 
 With Gradle:
 ```groovy
-  compile 'com.byox.drawview:drawview:1.2.4'
+  compile 'com.byox.drawview:drawview:1.2.6'
 ```
 or Maven:
 ```xml
 <dependency>
   <groupId>com.byox.drawview</groupId>
   <artifactId>drawview</artifactId>
-  <version>1.2.4</version>
+  <version>1.2.6</version>
   <type>pom</type>
 </dependency>
 ```
