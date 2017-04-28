@@ -7,6 +7,7 @@ import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingTool;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -18,7 +19,7 @@ import java.util.List;
  * @author Ing. Oscar G. Medina Cruz
  */
 
-public class DrawMove {
+public class DrawMove implements Serializable {
 
     private static DrawMove mSingleton;
 

@@ -39,5 +39,9 @@
         <attr name="dv_draw_zoomregion_scale" format="float"/>
         <attr name="dv_draw_zoomregion_minscale" format="float"/>
         <attr name="dv_draw_zoomregion_maxscale" format="float"/>
+        <attr name="dv_draw_orientation" format="enum">
+            <enum name="portrait" value="0"/>
+            <enum name="landscape" value="1"/>
+        </attr>
     </declare-styleable>
 </resources>

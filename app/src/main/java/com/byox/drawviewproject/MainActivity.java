@@ -191,6 +191,16 @@ public class MainActivity extends AppCompatActivity {
                 });
                 requestTextDialog.show(getSupportFragmentManager(), "requestText");
             }
+
+            @Override
+            public void onAllMovesPainted() {
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        canUndoRedo();
+                    }
+                }, 300);
+            }
         });
 
         mFadeView.setOnClickListener(new View.OnClickListener() {

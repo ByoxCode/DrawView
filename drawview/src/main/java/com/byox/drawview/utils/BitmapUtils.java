@@ -138,14 +138,16 @@ public class BitmapUtils {
         }
 
         try {
-            returnFile = File.createTempFile("temp", ".jpg");
+            returnFile = File.createTempFile("temp", "." + (
+                    imageFile.getAbsolutePath().toLowerCase().endsWith("jpg") ? "jpg" : "png"));
             FileOutputStream out = null;
             String filename = returnFile.getAbsolutePath();
             try {
                 out = new FileOutputStream(filename);
 
 //          write the compressed bitmap at the destination specified by filename.
-                scaledBitmap.compress(Bitmap.CompressFormat.JPEG, compressQuality, out);
+                scaledBitmap.compress(returnFile.getAbsolutePath().toLowerCase().endsWith("jpg") ?
+                        Bitmap.CompressFormat.JPEG : Bitmap.CompressFormat.PNG, compressQuality, out);
 
             } catch (FileNotFoundException e) {
                 e.printStackTrace();

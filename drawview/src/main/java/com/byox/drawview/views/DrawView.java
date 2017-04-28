@@ -18,6 +18,8 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v7.widget.CardView;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -38,6 +40,7 @@ import com.byox.drawview.R;
 import com.byox.drawview.dictionaries.DrawMove;
 import com.byox.drawview.enums.DrawingCapture;
 import com.byox.drawview.enums.DrawingMode;
+import com.byox.drawview.enums.DrawingOrientation;
 import com.byox.drawview.enums.DrawingTool;
 import com.byox.drawview.utils.BitmapUtils;
 
@@ -99,6 +102,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
 
     private DrawingMode mDrawingMode;
     private DrawingTool mDrawingTool;
+    private DrawingOrientation mInitialDrawingOrientation;
 
     private List<DrawMove> mDrawMoveHistory;
     private int mDrawMoveHistoryIndex = -1;
@@ -257,6 +261,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                         break;
                 }
             }
+
+            if (i == mDrawMoveHistory.size() - 1 && onDrawViewListener != null)
+                onDrawViewListener.onAllMovesPainted();
         }
 
         canvas.getClipBounds(mCanvasClipBounds);
@@ -377,6 +384,69 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         return true;
     }
 
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        Bundle bundle = new Bundle();
+        bundle.putParcelable("superState", super.onSaveInstanceState());
+        bundle.putInt("drawMoveHistorySize", mDrawMoveHistory.size());
+        for (int i = 0; i < mDrawMoveHistory.size(); i++){
+            bundle.putSerializable("mDrawMoveHistory" + i, mDrawMoveHistory.get(i));
+        }
+        bundle.putInt("mDrawMoveHistoryIndex", mDrawMoveHistoryIndex);
+        bundle.putInt("mDrawMoveBackgroundIndex", mDrawMoveBackgroundIndex);
+        bundle.putSerializable("mDrawingMode", mDrawingMode);
+        bundle.putSerializable("mDrawingTool", mDrawingTool);
+        bundle.putSerializable("mInitialDrawingOrientation", mInitialDrawingOrientation);
+
+        bundle.putInt("mDrawColor", mDrawColor);
+        bundle.putInt("mDrawWidth", mDrawWidth);
+        bundle.putInt("mDrawAlpha", mDrawAlpha);
+        bundle.putInt("mBackgroundColor", mBackgroundColor);
+        bundle.putBoolean("mAntiAlias", mAntiAlias);
+        bundle.putBoolean("mDither", mDither);
+        bundle.putFloat("mFontSize", mFontSize);
+        bundle.putSerializable("mPaintStyle", mPaintStyle);
+        bundle.putSerializable("mLineCap", mLineCap);
+        bundle.putInt("mFontFamily",
+                mFontFamily == Typeface.DEFAULT ? 0 :
+                mFontFamily == Typeface.MONOSPACE ? 1 :
+                mFontFamily == Typeface.SANS_SERIF ? 2 :
+                mFontFamily == Typeface.SERIF ? 3 : 0);
+        return bundle;
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        if (state instanceof Bundle) {
+            Bundle bundle = (Bundle) state;
+            for (int i = 0; i < bundle.getInt("drawMoveHistorySize"); i++){
+                mDrawMoveHistory.add((DrawMove) bundle.getSerializable("mDrawMoveHistory" + i));
+            }
+            mDrawMoveHistoryIndex = bundle.getInt("mDrawMoveHistoryIndex");
+            mDrawMoveBackgroundIndex = bundle.getInt("mDrawMoveBackgroundIndex");
+            mDrawingMode = (DrawingMode) bundle.getSerializable("mDrawingMode");
+            mDrawingTool = (DrawingTool) bundle.getSerializable("mDrawingTool");
+            mInitialDrawingOrientation = (DrawingOrientation) bundle.getSerializable("mInitialDrawingOrientation");
+
+            mDrawColor = bundle.getInt("mDrawColor");
+            mDrawWidth = bundle.getInt("mDrawWidth");
+            mDrawAlpha = bundle.getInt("mDrawAlpha");
+            mBackgroundColor = bundle.getInt("mBackgroundColor");
+            mAntiAlias = bundle.getBoolean("mAntiAlias");
+            mDither = bundle.getBoolean("mDither");
+            mFontSize = bundle.getFloat("mFontSize");
+            mPaintStyle = (Paint.Style) bundle.getSerializable("mPaintStyle");
+            mLineCap = (Paint.Cap) bundle.getSerializable("mLineCap");
+            mFontFamily =
+                    bundle.getInt("mFontFamily") == 0 ? Typeface.DEFAULT :
+                            bundle.getInt("mFontFamily") == 1 ? Typeface.MONOSPACE :
+                                    bundle.getInt("mFontFamily") == 2 ? Typeface.SANS_SERIF :
+                                            bundle.getInt("mFontFamily") == 3 ? Typeface.SERIF : Typeface.DEFAULT;
+            state = bundle.getParcelable("superState");
+        }
+        super.onRestoreInstanceState(state);
+    }
+
     // PRIVATE METHODS
 
     /**
@@ -492,6 +562,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             else if (typeface == 3)
                 mFontFamily = Typeface.SERIF;
             mFontSize = typedArray.getInteger(R.styleable.DrawView_dv_draw_font_size, 12);
+            int orientation = typedArray.getInteger(R.styleable.DrawView_dv_draw_orientation,
+                    getWidth() > getHeight() ? 1 : 0);
+            mInitialDrawingOrientation = DrawingOrientation.values()[orientation];
             if (getBackground() != null)
                 try {
                     mBackgroundColor = ((ColorDrawable) getBackground()).getColor();
@@ -790,6 +863,10 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
 
     public boolean isZoomEnabled() {
         return mZoomEnabled;
+    }
+
+    public boolean isDrawViewEmpty(){
+        return mDrawMoveHistory != null && mDrawMoveHistory.size() > 0;
     }
 
     public float getMaxZoomFactor() {
@@ -1204,5 +1281,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         void onClearDrawing();
 
         void onRequestText();
+
+        void onAllMovesPainted();
     }
 }

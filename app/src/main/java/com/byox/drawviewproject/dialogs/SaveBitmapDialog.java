@@ -81,14 +81,12 @@ public class SaveBitmapDialog extends DialogFragment {
 
                             FileOutputStream fileOutputStream = new FileOutputStream(image);
                             mPreviewBitmap.compress(
-                                    mPreviewFormat.toLowerCase().equals("JPG") ?
+                                    mPreviewFormat.toLowerCase().equals("jpg") ?
                                             Bitmap.CompressFormat.JPEG :
                                             Bitmap.CompressFormat.PNG, 100, fileOutputStream);
 
                             if (onSaveBitmapListener != null)
                                 onSaveBitmapListener.onSaveBitmapCompleted();
-                        } catch (FileNotFoundException e) {
-                            e.printStackTrace();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
