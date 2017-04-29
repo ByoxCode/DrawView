@@ -10,7 +10,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
@@ -43,6 +42,8 @@ import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingOrientation;
 import com.byox.drawview.enums.DrawingTool;
 import com.byox.drawview.utils.BitmapUtils;
+import com.byox.drawview.utils.SerializablePaint;
+import com.byox.drawview.utils.SerializablePath;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -76,8 +77,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     private int mDrawAlpha;
     private boolean mAntiAlias;
     private boolean mDither;
-    private Paint.Style mPaintStyle;
-    private Paint.Cap mLineCap;
+    private SerializablePaint.Style mPaintStyle;
+    private SerializablePaint.Cap mLineCap;
     private Typeface mFontFamily;
     private float mFontSize;
     private int mBackgroundColor = -1;
@@ -110,7 +111,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
 
     private RectF mAuxRect;
     private PorterDuffXfermode mEraserXefferMode;
-    private Paint mBackgroundPaint;
+    private SerializablePaint mBackgroundPaint;
+
+    private Rect mInvalidateRect;
 
     // VIEWS
     private CardView mZoomRegionCardView;
@@ -175,6 +178,15 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     protected void onDraw(Canvas canvas) {
         mContentBitmap.eraseColor(Color.TRANSPARENT);
 
+        /*if (mInvalidateRect != null){
+            Paint invPaint = new Paint();
+            invPaint.setColor(Color.RED);
+            invPaint.setStrokeWidth(2f);
+            invPaint.setStyle(Paint.Style.STROKE);
+            mContentCanvas.drawRect(mInvalidateRect, invPaint);
+            mContentCanvas.getClipBounds(mInvalidateRect);
+        }*/
+
         if (isZoomEnabled()) {
             canvas.save();
             canvas.scale(mZoomFactor, mZoomFactor, mZoomCenterX, mZoomCenterY);
@@ -193,11 +205,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                     case DRAW:
                         switch (drawMove.getDrawingTool()) {
                             case PEN:
-                                if (drawMove.getDrawingPathList() != null &&
-                                        drawMove.getDrawingPathList().size() > 0)
-                                    for (Path path : drawMove.getDrawingPathList()) {
-                                        mContentCanvas.drawPath(path, drawMove.getPaint());
-                                    }
+                                if (drawMove.getDrawingPath() != null)
+                                    mContentCanvas.drawPath(drawMove.getDrawingPath(), drawMove.getPaint());
                                 break;
                             case LINE:
                                 mContentCanvas.drawLine(drawMove.getStartX(), drawMove.getStartY(),
@@ -250,12 +259,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                         }
                         break;
                     case ERASER:
-                        if (drawMove.getDrawingPathList() != null &&
-                                drawMove.getDrawingPathList().size() > 0) {
+                        if (drawMove.getDrawingPath() != null){
                             drawMove.getPaint().setXfermode(mEraserXefferMode);
-                            for (Path path : drawMove.getDrawingPathList()) {
-                                mContentCanvas.drawPath(path, drawMove.getPaint());
-                            }
+                            mContentCanvas.drawPath(drawMove.getDrawingPath(), drawMove.getPaint());
                             drawMove.getPaint().setXfermode(null);
                         }
                         break;
@@ -298,6 +304,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         float touchX = motionEvent.getX() / mZoomFactor + mCanvasClipBounds.left;
         float touchY = motionEvent.getY() / mZoomFactor + mCanvasClipBounds.top;
 
+        int lastMoveIndex = 0;
+
         if (motionEvent.getPointerCount() == 1) {
             switch (motionEvent.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
@@ -315,6 +323,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                             .setStartX(touchX).setStartY(touchY)
                             .setEndX(touchX).setEndY(touchY)
                             .setDrawingMode(mDrawingMode).setDrawingTool(mDrawingTool));
+                    lastMoveIndex = mDrawMoveHistory.size() - 1;
 
 //                    Paint currentPaint = mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getPaint();
 //                    currentPaint.setStrokeWidth(currentPaint.getStrokeWidth() / mZoomFactor);
@@ -323,12 +332,11 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                     mDrawMoveHistoryIndex++;
 
                     if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
-                        Path path = new Path();
+                        SerializablePath path = new SerializablePath();
                         path.moveTo(touchX, touchY);
                         path.lineTo(touchX, touchY);
 
-                        mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setDrawingPathList(new ArrayList<Path>());
-                        mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList().add(path);
+                        mDrawMoveHistory.get(lastMoveIndex).setDrawingPathList(path);
                     }
                     break;
                 case MotionEvent.ACTION_MOVE:
@@ -336,32 +344,43 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                             mLastTouchEvent == MotionEvent.ACTION_MOVE)) {
                         mLastTouchEvent = MotionEvent.ACTION_MOVE;
 
+                        lastMoveIndex = mDrawMoveHistory.size() - 1;
+
                         if (mDrawMoveHistory.size() > 0) {
-                            mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setEndX(touchX).setEndY(touchY);
+                            mDrawMoveHistory.get(lastMoveIndex).setEndX(touchX).setEndY(touchY);
 
                             if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
-                                mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList()
-                                        .get(mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList().size() - 1)
-                                        .lineTo(touchX, touchY);
+                                for (int i = 0; i < motionEvent.getHistorySize(); i++){
+                                    float historicalX = motionEvent.getHistoricalX(i) / mZoomFactor + mCanvasClipBounds.left;
+                                    float historicalY = motionEvent.getHistoricalY(i) / mZoomFactor + mCanvasClipBounds.top;
+                                    mDrawMoveHistory.get(lastMoveIndex).getDrawingPath().lineTo(historicalX, historicalY);
+                                }
+                                mDrawMoveHistory.get(lastMoveIndex).getDrawingPath().lineTo(touchX, touchY);
                             }
                         }
                     }
                     break;
                 case MotionEvent.ACTION_UP:
+                    lastMoveIndex = mDrawMoveHistory.size() - 1;
+
                     if (mLastTouchEvent == MotionEvent.ACTION_DOWN) {
                         if (mDrawMoveHistory.size() > 0) {
-                            mDrawMoveHistory.remove(mDrawMoveHistory.size() - 1);
+                            mDrawMoveHistory.remove(lastMoveIndex);
                             mDrawMoveHistoryIndex--;
+                            lastMoveIndex--;
                         }
                     } else if (mLastTouchEvent == MotionEvent.ACTION_MOVE) {
                         mLastTouchEvent = -1;
                         if (mDrawMoveHistory.size() > 0) {
-                            mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setEndX(motionEvent.getX()).setEndY(motionEvent.getY());
+                            mDrawMoveHistory.get(lastMoveIndex).setEndX(touchX).setEndY(touchY);
 
                             if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
-                                mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList()
-                                        .get(mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getDrawingPathList().size() - 1)
-                                        .lineTo(touchX, touchY);
+                                for (int i = 0; i < motionEvent.getHistorySize(); i++){
+                                    float historicalX = motionEvent.getHistoricalX(i) / mZoomFactor + mCanvasClipBounds.left;
+                                    float historicalY = motionEvent.getHistoricalY(i) / mZoomFactor + mCanvasClipBounds.top;
+                                    mDrawMoveHistory.get(lastMoveIndex).getDrawingPath().lineTo(historicalX, historicalY);
+                                }
+                                mDrawMoveHistory.get(lastMoveIndex).getDrawingPath().lineTo(touchX, touchY);
                             }
                         }
                     }
@@ -380,7 +399,15 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             mLastTouchEvent = -1;
         }
 
-        invalidate();
+        if (mDrawMoveHistory.size() > 0) {
+            mInvalidateRect = new Rect(
+                    (int) (touchX - (mDrawMoveHistory.get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
+                    (int) (touchY - (mDrawMoveHistory.get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
+                    (int) (touchX + (mDrawMoveHistory.get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
+                    (int) (touchY + (mDrawMoveHistory.get(lastMoveIndex).getPaint().getStrokeWidth() * 2)));
+        }
+
+        invalidate(mInvalidateRect.left, mInvalidateRect.top, mInvalidateRect.right, mInvalidateRect.bottom);
         return true;
     }
 
@@ -435,8 +462,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             mAntiAlias = bundle.getBoolean("mAntiAlias");
             mDither = bundle.getBoolean("mDither");
             mFontSize = bundle.getFloat("mFontSize");
-            mPaintStyle = (Paint.Style) bundle.getSerializable("mPaintStyle");
-            mLineCap = (Paint.Cap) bundle.getSerializable("mLineCap");
+            mPaintStyle = (SerializablePaint.Style) bundle.getSerializable("mPaintStyle");
+            mLineCap = (SerializablePaint.Cap) bundle.getSerializable("mLineCap");
             mFontFamily =
                     bundle.getInt("mFontFamily") == 0 ? Typeface.DEFAULT :
                             bundle.getInt("mFontFamily") == 1 ? Typeface.MONOSPACE :
@@ -540,18 +567,18 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             mDither = typedArray.getBoolean(R.styleable.DrawView_dv_draw_dither, true);
             int paintStyle = typedArray.getInteger(R.styleable.DrawView_dv_draw_style, 2);
             if (paintStyle == 0)
-                mPaintStyle = Paint.Style.FILL;
+                mPaintStyle = SerializablePaint.Style.FILL;
             else if (paintStyle == 1)
-                mPaintStyle = Paint.Style.FILL_AND_STROKE;
+                mPaintStyle = SerializablePaint.Style.FILL_AND_STROKE;
             else if (paintStyle == 2)
-                mPaintStyle = Paint.Style.STROKE;
+                mPaintStyle = SerializablePaint.Style.STROKE;
             int cap = typedArray.getInteger(R.styleable.DrawView_dv_draw_corners, 2);
             if (cap == 0)
-                mLineCap = Paint.Cap.BUTT;
+                mLineCap = SerializablePaint.Cap.BUTT;
             else if (cap == 1)
-                mLineCap = Paint.Cap.ROUND;
+                mLineCap = SerializablePaint.Cap.ROUND;
             else if (cap == 2)
-                mLineCap = Paint.Cap.SQUARE;
+                mLineCap = SerializablePaint.Cap.SQUARE;
             int typeface = typedArray.getInteger(R.styleable.DrawView_dv_draw_font_family, 0);
             if (typeface == 0)
                 mFontFamily = Typeface.DEFAULT;
@@ -581,8 +608,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                 setBackgroundResource(R.drawable.drawable_transparent_pattern);
             }
 
-            mBackgroundPaint = new Paint();
-            mBackgroundPaint.setStyle(Paint.Style.FILL);
+            mBackgroundPaint = new SerializablePaint();
+            mBackgroundPaint.setStyle(SerializablePaint.Style.FILL);
             mBackgroundPaint.setColor(mBackgroundColor != -1 ? mBackgroundColor : Color.TRANSPARENT);
 
             mDrawingTool = DrawingTool.values()[typedArray.getInteger(R.styleable.DrawView_dv_draw_tool, 0)];
@@ -601,8 +628,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      *
      * @return new paint parameters for initialize drawing
      */
-    private Paint getNewPaintParams() {
-        Paint paint = new Paint();
+    private SerializablePaint getNewPaintParams() {
+        SerializablePaint paint = new SerializablePaint();
 
         if (mDrawingMode == DrawingMode.ERASER) {
             if (mDrawingTool != DrawingTool.PEN) {
@@ -633,10 +660,10 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      *
      * @return current paint parameters
      */
-    public Paint getCurrentPaintParams() {
-        Paint currentPaint;
+    public SerializablePaint getCurrentPaintParams() {
+        SerializablePaint currentPaint;
         if (mDrawMoveHistory.size() > 0 && mDrawMoveHistoryIndex >= 0) {
-            currentPaint = new Paint();
+            currentPaint = new SerializablePaint();
             currentPaint.setColor(
                     mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getColor());
             currentPaint.setStyle(
@@ -655,7 +682,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                     mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getTypeface());
             currentPaint.setTextSize(mFontSize);
         } else {
-            currentPaint = new Paint();
+            currentPaint = new SerializablePaint();
             currentPaint.setColor(mDrawColor);
             currentPaint.setStyle(mPaintStyle);
             currentPaint.setDither(mDither);
@@ -837,11 +864,11 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         return mBackgroundImage;
     }
 
-    public Paint.Style getPaintStyle() {
+    public SerializablePaint.Style getPaintStyle() {
         return mPaintStyle;
     }
 
-    public Paint.Cap getLineCap() {
+    public SerializablePaint.Cap getLineCap() {
         return mLineCap;
     }
 
@@ -893,7 +920,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @param paint
      * @return this instance of the view
      */
-    public DrawView refreshAttributes(Paint paint) {
+    public DrawView refreshAttributes(SerializablePaint paint) {
         mDrawColor = paint.getColor();
         mPaintStyle = paint.getStyle();
         mDither = paint.isDither();
@@ -978,7 +1005,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @param paintStyle
      * @return this instance of the view
      */
-    public DrawView setPaintStyle(Paint.Style paintStyle) {
+    public DrawView setPaintStyle(SerializablePaint.Style paintStyle) {
         this.mPaintStyle = paintStyle;
         return this;
     }
@@ -989,7 +1016,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @param lineCap
      * @return this instance of the view
      */
-    public DrawView setLineCap(Paint.Cap lineCap) {
+    public DrawView setLineCap(SerializablePaint.Cap lineCap) {
         this.mLineCap = lineCap;
         return this;
     }
@@ -1196,8 +1223,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                 mZoomFactor *= detector.getScaleFactor();
                 mZoomFactor = Math.max(1f, Math.min(mZoomFactor, mMaxZoomFactor));
                 mZoomFactor = mZoomFactor > mMaxZoomFactor ? mMaxZoomFactor : mZoomFactor < 1f ? 1f : mZoomFactor;
-                mZoomCenterX = getWidth() - detector.getFocusX();
-                mZoomCenterY = getHeight() - detector.getFocusY();
+                mZoomCenterX = detector.getFocusX() / mZoomFactor + mCanvasClipBounds.left;
+                mZoomCenterY = detector.getFocusY() / mZoomFactor + mCanvasClipBounds.top;
 
                 if (mZoomFactor > 1f)
                     showHideZoomRegionView(VISIBLE);

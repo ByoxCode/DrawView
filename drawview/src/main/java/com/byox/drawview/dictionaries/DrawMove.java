@@ -5,6 +5,8 @@ import android.graphics.Path;
 
 import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingTool;
+import com.byox.drawview.utils.SerializablePaint;
+import com.byox.drawview.utils.SerializablePath;
 
 import java.io.File;
 import java.io.Serializable;
@@ -23,16 +25,17 @@ public class DrawMove implements Serializable {
 
     private static DrawMove mSingleton;
 
-    private Paint mPaint;
+    private SerializablePaint mPaint;
     private DrawingMode mDrawingMode = null;
     private DrawingTool mDrawingTool = null;
-    private List<Path> mDrawingPathList;
+    //private List<SerializablePath> mDrawingPathList;
+    private SerializablePath mDrawingPath;
     private float mStartX, mStartY, mEndX, mEndY;
     private String mText;
     private File mBackgroundImage;
 
     // METHODS
-    public DrawMove() {
+    private DrawMove() {
     }
 
     public static DrawMove newInstance() {
@@ -42,7 +45,7 @@ public class DrawMove implements Serializable {
 
     // GETTERS
 
-    public Paint getPaint() {
+    public SerializablePaint getPaint() {
         return mPaint;
     }
 
@@ -54,8 +57,8 @@ public class DrawMove implements Serializable {
         return mDrawingTool;
     }
 
-    public List<Path> getDrawingPathList() {
-        return mDrawingPathList;
+    public SerializablePath getDrawingPath() {
+        return mDrawingPath;
     }
 
     public float getStartX() {
@@ -84,7 +87,7 @@ public class DrawMove implements Serializable {
 
     // SETTERS
 
-    public DrawMove setPaint(Paint paint) {
+    public DrawMove setPaint(SerializablePaint paint) {
         if (mSingleton != null) {
             mSingleton.mPaint = paint;
             return mSingleton;
@@ -105,9 +108,9 @@ public class DrawMove implements Serializable {
         } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
-    public DrawMove setDrawingPathList(List<Path> drawingPathList) {
+    public DrawMove setDrawingPathList(SerializablePath drawingPath) {
         if (mSingleton != null) {
-            mSingleton.mDrawingPathList = drawingPathList;
+            mSingleton.mDrawingPath = drawingPath;
             return mSingleton;
         } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
