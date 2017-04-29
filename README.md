@@ -21,14 +21,14 @@ Usage
 
 With Gradle:
 ```groovy
-  compile 'com.byox.drawview:drawview:1.2.10'
+  compile 'com.byox.drawview:drawview:1.2.11'
 ```
 or Maven:
 ```xml
 <dependency>
   <groupId>com.byox.drawview</groupId>
   <artifactId>drawview</artifactId>
-  <version>1.2.10</version>
+  <version>1.2.11</version>
   <type>pom</type>
 </dependency>
 ```
