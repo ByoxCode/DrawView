@@ -24,10 +24,6 @@
                 android:icon="@drawable/ic_action_palette"
                 android:title="@string/draw_attrs" />
             <item
-                android:id="@+id/action_draw_background"
-                android:icon="@drawable/ic_action_image"
-                android:title="@string/background" />
-            <item
                 android:id="@+id/action_draw_tool"
                 android:icon="@drawable/ic_action_brush"
                 android:title="@string/draw_tool" />
@@ -40,9 +36,9 @@
                 android:icon="@drawable/ic_action_save"
                 android:title="@string/save_draw" />
             <item
-                android:id="@+id/action_view_camera_option"
-                android:icon="@drawable/ic_action_photo_camera"
-                android:title="@string/camera_option" />
+                android:id="@+id/action_drawview_option"
+                android:icon="@drawable/ic_action_format_paint"
+                android:title="@string/draw_option" />
         </menu>
     </item>
 </menu>

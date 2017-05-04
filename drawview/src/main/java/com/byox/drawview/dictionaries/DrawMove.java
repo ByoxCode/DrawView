@@ -1,8 +1,12 @@
 package com.byox.drawview.dictionaries;
 
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 
+import com.byox.drawview.enums.BackgroundScale;
+import com.byox.drawview.enums.BackgroundType;
 import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingTool;
 import com.byox.drawview.utils.SerializablePaint;
@@ -32,7 +36,8 @@ public class DrawMove implements Serializable {
     private SerializablePath mDrawingPath;
     private float mStartX, mStartY, mEndX, mEndY;
     private String mText;
-    private File mBackgroundImage;
+    private Matrix mBackgroundMatrix;
+    private byte[] mBackgroundImage;
 
     // METHODS
     private DrawMove() {
@@ -81,7 +86,11 @@ public class DrawMove implements Serializable {
         return mText;
     }
 
-    public File getBackgroundImage() {
+    public Matrix getBackgroundMatrix(){
+        return mBackgroundMatrix;
+    }
+
+    public byte[] getBackgroundImage() {
         return mBackgroundImage;
     }
 
@@ -150,9 +159,10 @@ public class DrawMove implements Serializable {
         } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
-    public DrawMove setBackgroundImage(File backgroundImage) {
+    public DrawMove setBackgroundImage(byte[] backgroundImage, Matrix backgroundMatrix) {
         if (mSingleton != null) {
             mSingleton.mBackgroundImage = backgroundImage;
+            mSingleton.mBackgroundMatrix = backgroundMatrix;
             return mSingleton;
         } else throw new RuntimeException("Create new instance of DrawMove first!");
     }

@@ -32,7 +32,7 @@
 
     </android.support.design.widget.CoordinatorLayout>
 
-    <View
+    <!--<View
         android:id="@+id/fade_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -253,20 +253,21 @@
         android:visibility="invisible"
         app:elevation="6dp"
         app:fabSize="mini"
-        app:srcCompat="@drawable/ic_image_color_lens" />
+        app:srcCompat="@drawable/ic_image_color_lens" />-->
 
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab_actions"
+        android:id="@+id/fab_clear"
+        android:visibility="invisible"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
+        android:layout_gravity="bottom|center_horizontal"
         android:layout_marginBottom="96dp"
         android:layout_marginEnd="@dimen/fab_margin"
         android:layout_marginStart="@dimen/fab_margin"
         android:tag="0"
         android:tint="#FFF"
         app:elevation="6dp"
-        app:fabSize="normal"
-        app:srcCompat="@drawable/ic_content_add" />
+        app:fabSize="mini"
+        app:srcCompat="@drawable/ic_content_clear" />
 
 </android.support.design.widget.CoordinatorLayout>

@@ -1,12 +1,12 @@
 package com.byox.drawviewproject;
 
+import android.*;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Paint;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -14,7 +14,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.CardView;
+import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -26,6 +26,8 @@ import com.byox.drawview.enums.BackgroundType;
 import com.byox.drawview.enums.DrawingCapture;
 import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingTool;
+import com.byox.drawview.utils.BitmapUtils;
+import com.byox.drawview.views.DrawCameraView;
 import com.byox.drawview.views.DrawView;
 import com.byox.drawviewproject.dialogs.DrawAttribsDialog;
 import com.byox.drawviewproject.dialogs.RequestTextDialog;
@@ -38,14 +40,15 @@ import com.google.android.gms.ads.NativeExpressAdView;
 
 import java.io.File;
 
-public class MainActivity extends AppCompatActivity {
+public class CameraActivity extends AppCompatActivity {
 
     // CONSTANTS
     private final int STORAGE_PERMISSIONS = 1000;
-    private final int STORAGE_PERMISSIONS2 = 2000;
+    private final int CAMERA_PERMISSIONS = 3000;
 
     // VIEWS
     private Toolbar mToolbar;
+    private DrawCameraView mDrawCameraView;
     private DrawView mDrawView;
 
     private FloatingActionButton mFabClearDraw;
@@ -59,19 +62,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_camera);
 
+        mDrawCameraView = (DrawCameraView) findViewById(R.id.draw_cam_view);
+        mDrawView = (DrawView) findViewById(R.id.draw_view); 
         mFabClearDraw = (FloatingActionButton) findViewById(R.id.fab_clear);
 
+        requestPermissions(1);
         setupToolbar();
-        setupDrawView();
-        setListeners();
         setupADS();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_camera, menu);
         mMenuItemUndo = menu.getItem(0);
         mMenuItemRedo = menu.getItem(1);
         return true;
@@ -80,6 +84,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case android.R.id.home:
+                finish();
+                break;
             case R.id.action_undo:
                 if (mDrawView.canUndo()) {
                     mDrawView.undo();
@@ -95,9 +102,6 @@ public class MainActivity extends AppCompatActivity {
             case R.id.action_draw_attrs:
                 changeDrawAttribs();
                 break;
-            case R.id.action_draw_background:
-                requestPermissions(1);
-                break;
             case R.id.action_draw_tool:
                 changeDrawTool();
                 break;
@@ -107,8 +111,8 @@ public class MainActivity extends AppCompatActivity {
             case R.id.action_draw_save:
                 requestPermissions(0);
                 break;
-            case R.id.action_view_camera_option:
-                Intent i = new Intent(MainActivity.this, CameraActivity.class);
+            case R.id.action_drawview_option:
+                Intent i = new Intent(CameraActivity.this, MainActivity.class);
                 i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(i);
                 break;
@@ -128,17 +132,22 @@ public class MainActivity extends AppCompatActivity {
                             saveDraw();
                         }
                     }, 600);
+                } else {
+                    finish();
                 }
                 break;
-            case STORAGE_PERMISSIONS2:
+            case CAMERA_PERMISSIONS:
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     new Handler().postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            chooseBackgroundImage();
+                            mDrawCameraView.attachCameraView();
+                            setListeners();
                         }
                     }, 600);
+                } else {
+                    finish();
                 }
                 break;
         }
@@ -150,10 +159,6 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(mToolbar);
         assert getSupportActionBar() != null;
         getSupportActionBar().setTitle(R.string.app_name);
-    }
-
-    private void setupDrawView() {
-        mDrawView = (DrawView) findViewById(R.id.draw_view);
     }
 
     private void setListeners() {
@@ -277,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void saveDraw() {
         SaveBitmapDialog saveBitmapDialog = SaveBitmapDialog.newInstance();
-        Object[] createCaptureResponse = mDrawView.createCapture(DrawingCapture.BITMAP);
+        Object[] createCaptureResponse = mDrawView.createCapture(DrawingCapture.BITMAP, mDrawCameraView.getCameraView());
         saveBitmapDialog.setPreviewBitmap((Bitmap) createCaptureResponse[0]);
         saveBitmapDialog.setPreviewFormat(String.valueOf(createCaptureResponse[1]));
         saveBitmapDialog.setOnSaveBitmapListener(new SaveBitmapDialog.OnSaveBitmapListener() {
@@ -292,22 +297,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         saveBitmapDialog.show(getSupportFragmentManager(), "saveBitmap");
-    }
-
-    private void chooseBackgroundImage() {
-        SelectImageDialog selectImageDialog = SelectImageDialog.newInstance();
-        selectImageDialog.setOnImageSelectListener(new SelectImageDialog.OnImageSelectListener() {
-            @Override
-            public void onSelectImage(File imageFile) {
-                mDrawView.setBackgroundImage(imageFile, BackgroundType.FILE, BackgroundScale.CENTER_CROP);
-            }
-
-            @Override
-            public void onSelectImage(byte[] imageBytes) {
-                //mDrawView.setBackgroundImage(imageBytes, BackgroundType.BYTES, BackgroundScale.FIT_START);
-            }
-        });
-        selectImageDialog.show(getSupportFragmentManager(), SelectImageDialog.SELEC_IMAGE_DIALOG);
     }
 
     private void clearDraw() {
@@ -334,39 +323,40 @@ public class MainActivity extends AppCompatActivity {
     private void requestPermissions(int option) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (option == 0) {
-                if (ContextCompat.checkSelfPermission(MainActivity.this,
-                        Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                        || ContextCompat.checkSelfPermission(MainActivity.this,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                if (ContextCompat.checkSelfPermission(CameraActivity.this,
+                        android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                        || ContextCompat.checkSelfPermission(CameraActivity.this,
+                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
 
-                    ActivityCompat.requestPermissions(MainActivity.this,
+                    ActivityCompat.requestPermissions(CameraActivity.this,
                             new String[]{
-                                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                                    Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                                    android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
                             STORAGE_PERMISSIONS);
                 } else {
                     saveDraw();
                 }
-            } else if (option == 1) {
-                if (ContextCompat.checkSelfPermission(MainActivity.this,
-                        Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                        || ContextCompat.checkSelfPermission(MainActivity.this,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            } else  if (option == 1){
+                if (ContextCompat.checkSelfPermission(CameraActivity.this,
+                        Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
 
-                    ActivityCompat.requestPermissions(MainActivity.this,
+                    ActivityCompat.requestPermissions(CameraActivity.this,
                             new String[]{
-                                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                                    Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                            STORAGE_PERMISSIONS2);
+                                    Manifest.permission.CAMERA},
+                            CAMERA_PERMISSIONS);
                 } else {
-                    chooseBackgroundImage();
+                    mDrawCameraView.attachCameraView();
+                    setListeners();
                 }
             }
         } else {
             if (option == 0)
                 saveDraw();
-            else if (option == 1)
-                chooseBackgroundImage();
+            if (option == 1) {
+                mDrawCameraView.attachCameraView();
+                setListeners();
+            }
         }
     }
+
 }

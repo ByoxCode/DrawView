@@ -43,5 +43,6 @@
             <enum name="portrait" value="0"/>
             <enum name="landscape" value="1"/>
         </attr>
+        <attr name="dv_draw_is_camera" format="boolean"/>
     </declare-styleable>
 </resources>

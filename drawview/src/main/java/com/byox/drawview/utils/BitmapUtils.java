@@ -6,12 +6,18 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.RectF;
 import android.media.ExifInterface;
 import android.util.Log;
+import android.util.Size;
 import android.view.View;
 
+import com.byox.drawview.enums.BackgroundScale;
+import com.byox.drawview.enums.BackgroundType;
 import com.byox.drawview.views.DrawView;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -22,29 +28,40 @@ import java.io.IOException;
  */
 
 public class BitmapUtils {
-    public static Bitmap CreateBitmapMatchesViewSize(View imageViewDest, Bitmap bitmapSrc){
+    public static Bitmap CreateBitmapMatchesViewSize(View imageViewDest, Bitmap bitmapSrc) {
         int currentBitmapWidth = bitmapSrc.getWidth();
         int currentBitmapHeight = bitmapSrc.getHeight();
 
         int ivWidth = imageViewDest.getWidth();
         int ivHeight = imageViewDest.getHeight();
         int newWidth = ivWidth;
-        int newHeight = (int) Math.floor((double) currentBitmapHeight *( (double) newWidth / (double) currentBitmapWidth));
+        int newHeight = (int) Math.floor((double) currentBitmapHeight * ((double) newWidth / (double) currentBitmapWidth));
 
         return Bitmap.createScaledBitmap(bitmapSrc, newWidth, newHeight, true);
     }
 
-    public static File GetCompressedImage(File imageFile, int compressQuality) {
+    public static byte[] GetCompressedImage(Object image, BackgroundType backgroundType, int compressQuality) {
 
-        File returnFile = null;
+        Bitmap bmp = null;
         Bitmap scaledBitmap = null;
-
         BitmapFactory.Options options = new BitmapFactory.Options();
 
 //      by setting this field as true, the actual bitmap pixels are not loaded in the memory. Just the bounds are loaded. If
 //      you try the use the bitmap here, you will get null.
         options.inJustDecodeBounds = true;
-        Bitmap bmp = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
+        switch (backgroundType) {
+            case FILE:
+                bmp = BitmapFactory.decodeFile(((File) image).getAbsolutePath(), options);
+                break;
+            case BITMAP:
+                bmp = (Bitmap) image;
+                options.outHeight = bmp.getHeight();
+                options.outWidth = bmp.getWidth();
+                break;
+            case BYTES:
+                bmp = BitmapFactory.decodeByteArray((byte[]) image, 0, ((byte[]) image).length, options);
+                break;
+        }
 
         int actualHeight = options.outHeight;
         int actualWidth = options.outWidth;
@@ -86,13 +103,24 @@ public class BitmapUtils {
         options.inInputShareable = true;
         options.inTempStorage = new byte[16 * 1024];
 
-        try {
+        switch (backgroundType) {
+            case FILE:
+                bmp = BitmapFactory.decodeFile(((File) image).getAbsolutePath(), options);
+                break;
+            case BITMAP:
+                bmp = (Bitmap) image;
+                break;
+            case BYTES:
+                bmp = BitmapFactory.decodeByteArray((byte[]) image, 0, ((byte[]) image).length);
+                break;
+        }
+        /*try {
 //          load the bitmap from its path
-            bmp = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
+            bmp = BitmapFactory.decodeFile(image.getAbsolutePath(), options);
         } catch (OutOfMemoryError exception) {
             exception.printStackTrace();
 
-        }
+        }*/
         try {
             scaledBitmap = Bitmap.createBitmap(actualWidth, actualHeight, Bitmap.Config.ARGB_8888);
         } catch (OutOfMemoryError exception) {
@@ -114,22 +142,25 @@ public class BitmapUtils {
 //      check the rotation of the image and display it properly
         ExifInterface exif;
         try {
-            exif = new ExifInterface(imageFile.getAbsolutePath());
-
-            int orientation = exif.getAttributeInt(
-                    ExifInterface.TAG_ORIENTATION, 0);
-            Log.d("EXIF", "Exif: " + orientation);
             Matrix matrix = new Matrix();
-            if (orientation == 6) {
-                matrix.postRotate(90);
+            if (backgroundType == BackgroundType.FILE) {
+                exif = new ExifInterface(((File) image).getAbsolutePath());
+
+                int orientation = exif.getAttributeInt(
+                        ExifInterface.TAG_ORIENTATION, 0);
                 Log.d("EXIF", "Exif: " + orientation);
-            } else if (orientation == 3) {
-                matrix.postRotate(180);
-                Log.d("EXIF", "Exif: " + orientation);
-            } else if (orientation == 8) {
-                matrix.postRotate(270);
-                Log.d("EXIF", "Exif: " + orientation);
+                if (orientation == 6) {
+                    matrix.postRotate(90);
+                    Log.d("EXIF", "Exif: " + orientation);
+                } else if (orientation == 3) {
+                    matrix.postRotate(180);
+                    Log.d("EXIF", "Exif: " + orientation);
+                } else if (orientation == 8) {
+                    matrix.postRotate(270);
+                    Log.d("EXIF", "Exif: " + orientation);
+                }
             }
+
             scaledBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0,
                     scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix,
                     true);
@@ -137,26 +168,28 @@ public class BitmapUtils {
             e.printStackTrace();
         }
 
-        try {
-            returnFile = File.createTempFile("temp", "." + (
-                    imageFile.getAbsolutePath().toLowerCase().endsWith("jpg") ? "jpg" : "png"));
-            FileOutputStream out = null;
-            String filename = returnFile.getAbsolutePath();
-            try {
-                out = new FileOutputStream(filename);
+//        try {
+//            returnFile = File.createTempFile("temp", "." + (
+//                    image.getAbsolutePath().toLowerCase().endsWith("jpg") ? "jpg" : "png"));
+//            FileOutputStream out = null;
+//            String filename = returnFile.getAbsolutePath();
+        ByteArrayOutputStream stream = null;
+//            try {
+//                out = new FileOutputStream(filename);
+        stream = new ByteArrayOutputStream();
 
 //          write the compressed bitmap at the destination specified by filename.
-                scaledBitmap.compress(returnFile.getAbsolutePath().toLowerCase().endsWith("jpg") ?
-                        Bitmap.CompressFormat.JPEG : Bitmap.CompressFormat.PNG, compressQuality, out);
+        scaledBitmap.compress(Bitmap.CompressFormat.PNG, compressQuality, stream);
+        bmp.recycle();
 
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//            } catch (FileNotFoundException e) {
+//                e.printStackTrace();
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
-        return returnFile;
+        return stream.toByteArray();
 
     }
 
@@ -179,11 +212,17 @@ public class BitmapUtils {
         return inSampleSize;
     }
 
-    public static Bitmap GetBitmapForDrawView(DrawView drawView, File imageFile, int imageQuality, Matrix viewMatrix){
-        Bitmap bmp = BitmapUtils.CreateBitmapMatchesViewSize(drawView,
-                BitmapFactory.decodeFile(
-                        BitmapUtils.GetCompressedImage(imageFile, imageQuality).getAbsolutePath()));
-        return Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(),
-                bmp.getHeight(), viewMatrix, true);
+    public static Bitmap GetBitmapForDrawView(DrawView drawView, Object image, BackgroundType backgroundType, int imageQuality) {
+        byte[] imageInBytes = BitmapUtils.GetCompressedImage(image, backgroundType, imageQuality);
+        return BitmapUtils.CreateBitmapMatchesViewSize(drawView,
+                BitmapFactory.decodeByteArray(imageInBytes, 0, imageInBytes.length));
+    }
+
+    public static Bitmap GetCombinedBitmaps(Bitmap bmp1, Bitmap bmp2, int destWidth, int destHeight) {
+        Bitmap bmOverlay = Bitmap.createBitmap(destWidth, destHeight, bmp1.getConfig());
+        Canvas canvas = new Canvas(bmOverlay);
+        canvas.drawBitmap(bmp1, new Matrix(), null);
+        canvas.drawBitmap(bmp2, 0, 0, null);
+        return bmOverlay;
     }
 }

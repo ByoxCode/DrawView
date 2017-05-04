@@ -7,6 +7,14 @@
 
     <string name="undo">Undo</string>
     <string name="redo">Redo</string>
+    <string name="functions">Functions</string>
+    <string name="draw_attrs">Draw attributes</string>
+    <string name="background">Background image</string>
+    <string name="draw_tool">Draw tool</string>
+    <string name="draw_mode">Draw mode</string>
+    <string name="save_draw">Save draw</string>
+    <string name="camera_option">Camera option</string>
+    <string name="draw_option">DrawView option</string>
 
     <!-- ADS -->
     <string name="banner_ad_unit_id">ca-app-pub-6238951090454835/7400289908</string>
