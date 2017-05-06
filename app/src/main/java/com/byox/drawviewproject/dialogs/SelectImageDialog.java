@@ -22,6 +22,9 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.byox.drawviewproject.R;
 import com.byox.drawviewproject.adapters.PhotoAdapter;
@@ -47,8 +50,8 @@ public class SelectImageDialog extends BottomSheetDialogFragment {
 
     // VIEWS
     private SwipeRefreshLayout mSwipeRefreshLayout;
-    //    private CircularProgressView mCircularProgressView;
     private RecyclerView mRecyclerView;
+    private LinearLayout mNoImages;
 
     // VARS
     private CustomBottomSheetBehavior mCustomBottomSheetBehavior;
@@ -67,6 +70,7 @@ public class SelectImageDialog extends BottomSheetDialogFragment {
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.srl_select_image);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.rv_select_image);
+        mNoImages = (LinearLayout) view.findViewById(R.id.ll_no_images);
 
         mSwipeRefreshLayout.setColorSchemeColors(ContextCompat.getColor(getContext(), R.color.colorPrimary));
         mRecyclerView.setHasFixedSize(true);
@@ -131,6 +135,8 @@ public class SelectImageDialog extends BottomSheetDialogFragment {
         protected void onPreExecute() {
             super.onPreExecute();
 
+            mNoImages.setVisibility(View.INVISIBLE);
+
             mSwipeRefreshLayout.post(new Runnable() {
                 @Override
                 public void run() {
@@ -176,6 +182,9 @@ public class SelectImageDialog extends BottomSheetDialogFragment {
                         mSwipeRefreshLayout.setEnabled(false);
                     }
                 });
+
+                if (imageList.size() == 0)
+                    mNoImages.setVisibility(View.VISIBLE);
             }
         }
     }

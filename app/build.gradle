@@ -7,8 +7,8 @@ android {
         applicationId "com.byox.drawviewproject"
         minSdkVersion 14
         targetSdkVersion 25
-        versionCode 10
-        versionName "2.3"
+        versionCode 11
+        versionName "2.6"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -26,7 +26,6 @@ dependencies {
     })
 
     compile project(path: ':drawview')
-
 
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support:design:25.3.1'
