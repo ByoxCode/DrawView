@@ -13,6 +13,7 @@ Undo or redo actions it is possible with DrawView.
 ![text tool gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.00.25.gif)
 ![save bitmap gif](https://github.com/ByoxCode/DrawView/blob/master/2016.11.10_18.03.14.gif)
 ![zoom gif](https://github.com/ByoxCode/DrawView/blob/master/2017.04.01_04.53.15.gif)
+![camera gif](https://github.com/ByoxCode/DrawView/blob/master/2017.05.04_02.56.52.gif)
 
 View example [APK](https://play.google.com/store/apps/details?id=com.byox.drawviewproject)
 
@@ -21,14 +22,14 @@ Usage
 
 With Gradle:
 ```groovy
-  compile 'com.byox.drawview:drawview:1.2.11'
+  compile 'com.byox.drawview:drawview:1.3.1'
 ```
 or Maven:
 ```xml
 <dependency>
   <groupId>com.byox.drawview</groupId>
   <artifactId>drawview</artifactId>
-  <version>1.2.11</version>
+  <version>1.3.1</version>
   <type>pom</type>
 </dependency>
 ```
@@ -67,6 +68,11 @@ Please visit [Wiki](https://github.com/ByoxCode/DrawView/wiki)
 Donate
 --------
 If this library is useful for you, and you like it, and if want to contribute for develop more libraries, you can buy me a beer. [Click here to donate](https://github.com/ByoxCode/DrawView/wiki/3.1-Contribute-for-develop-more-libraries)
+
+Apps that uses DrawView
+--------
+
+Please feel free to contact me if you like to appear in this section.
 
 License
 --------
