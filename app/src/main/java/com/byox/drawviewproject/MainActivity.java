@@ -20,6 +20,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
+import android.widget.Toast;
 
 import com.byox.drawview.enums.BackgroundScale;
 import com.byox.drawview.enums.BackgroundType;
@@ -112,6 +113,18 @@ public class MainActivity extends AppCompatActivity {
                 i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(i);
                 break;
+            case R.id.action_switch:
+                // 绘画开关
+                Toast.makeText(this, "action_switch", Toast.LENGTH_SHORT).show();
+                mDrawView.setHistorySwitch(!mDrawView.getHistorySwitch());
+//                mDrawView.setBackgroundImage()
+                break;
+            case R.id.action_clear_history:
+                // 清除历史
+                Toast.makeText(this, "action_clear_history", Toast.LENGTH_SHORT).show();
+                mDrawView.clearHistory();
+                break;
+
         }
         return super.onOptionsItemSelected(item);
     }

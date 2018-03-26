@@ -13,6 +13,27 @@
         android:icon="@drawable/ic_action_content_redo_disabled"
         android:title="@string/redo"
         app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_new_functions"
+        android:icon="@drawable/ic_action_more_vert"
+        android:title="@string/functions"
+        app:showAsAction="always">
+        <menu>
+            <item
+                android:id="@+id/action_clear_history"
+                android:icon="@null"
+                android:title="清空历史"
+                app:showAsAction="always" />
+            <item
+                android:id="@+id/action_switch"
+                android:icon="@null"
+                android:title="绘制开关"
+                app:showAsAction="always" />
+        </menu>
+    </item>
+
+
     <item
         android:id="@+id/action_functions"
         android:icon="@drawable/ic_action_more_vert"
@@ -45,4 +66,5 @@
                 android:title="@string/camera_option" />
         </menu>
     </item>
+
 </menu>
