@@ -114,9 +114,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     private DrawingTool mDrawingTool;
     private DrawingOrientation mInitialDrawingOrientation;
 
-    private List<DrawMove> mDrawMoveHistory;
-    private int mDrawMoveHistoryIndex = -1;
-    private int mDrawMoveBackgroundIndex = -1;
+    private List<DrawMove> mDrawMoveHistory;// 路径记录
+    private int mDrawMoveHistoryIndex = -1;// 历史路径index
+    private int mDrawMoveBackgroundIndex = -1;// background index
 
     private RectF mAuxRect;
     private PorterDuffXfermode mEraserXefferMode;
@@ -127,6 +127,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     // VIEWS
     private CardView mZoomRegionCardView;
     private ZoomRegionView mZoomRegionView;
+
+    private boolean historySwitch = true;// true 开启绘制历史；false 关闭
 
     /**
      * Default constructor
@@ -195,8 +197,10 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         // Draw canvas background
         mContentCanvas.drawRect(0, 0, mContentBitmap.getWidth(), mContentBitmap.getHeight(), mBackgroundPaint);
 
-        if (mDrawMoveBackgroundIndex != -1)
-            drawBackgroundImage(mDrawMoveHistory.get(mDrawMoveBackgroundIndex), mContentCanvas);
+        if (mDrawMoveBackgroundIndex != -1 && mDrawMoveHistory != null && mDrawMoveHistory.size() > 0) {
+            DrawMove drawMove = mDrawMoveHistory.get(mDrawMoveBackgroundIndex);
+            drawBackgroundImage(drawMove, mContentCanvas);
+        }
 
         for (int i = 0; i < mDrawMoveHistoryIndex + 1; i++) {
             DrawMove drawMove = mDrawMoveHistory.get(i);
@@ -296,6 +300,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      */
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
+        if (!historySwitch) {
+            return false;
+        }
         if (mZoomEnabled) {
             mScaleGestureDetector.onTouchEvent(motionEvent);
             mGestureDetector.onTouchEvent(motionEvent);
@@ -720,6 +727,50 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     }
 
     /**
+     * 清空绘制记录，不清空背景图片
+     */
+    public boolean clearHistory() {
+        if (mDrawMoveHistory != null) {
+            if (mDrawMoveBackgroundIndex != -1) {
+                DrawMove drawMove = mDrawMoveHistory.get(mDrawMoveBackgroundIndex);
+                mDrawMoveHistory.clear();
+                mDrawMoveHistory.add(drawMove);
+                mDrawMoveHistoryIndex = 0;
+                mDrawMoveBackgroundIndex = 0;
+                invalidate();
+            } else {
+                mDrawMoveHistory.clear();
+                mDrawMoveHistoryIndex = -1;
+                mDrawMoveBackgroundIndex = -1;
+                invalidate();
+            }
+//            if (onDrawViewListener != null)
+//                onDrawViewListener.onClearDrawing();
+            return true;
+        }
+        invalidate();
+        return false;
+    }
+
+    /**
+     * 绘制记录历史开关
+     *
+     * @param historySwitch true
+     */
+    public void setHistorySwitch(boolean historySwitch) {
+        this.historySwitch = historySwitch;
+    }
+
+    /**
+     * 返回绘制历史记录状态
+     *
+     * @return
+     */
+    public boolean getHistorySwitch() {
+        return this.historySwitch;
+    }
+
+    /**
      * Undo last drawing action
      *
      * @return if the view can do the undo action
@@ -813,7 +864,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         return result;
     }
 
-    public Object[] createCapture(DrawingCapture drawingCapture, CameraView cameraView){
+    public Object[] createCapture(DrawingCapture drawingCapture, CameraView cameraView) {
         Object[] result = null;
         switch (drawingCapture) {
             case BITMAP:
@@ -925,7 +976,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         return mDrawMoveHistory == null || mDrawMoveHistory.size() == 0;
     }
 
-    public boolean isForCamera(){
+    public boolean isForCamera() {
         return this.isForCamera;
     }
 
@@ -1111,32 +1162,33 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
 
     /**
      * Set if the draw view is used for camera
+     *
      * @param isForCamera Value that indicates if the draw view is for camera
      * @return this instance of the view
      */
-    public DrawView setIsForCamera(boolean isForCamera){
+    public DrawView setIsForCamera(boolean isForCamera) {
         this.isForCamera = isForCamera;
         return this;
     }
 
     /**
-     *
      * Set the customized background color for the view
+     *
      * @param backgroundColor The background color for the view
      * @return this instance of the view
      */
-    public DrawView setDrawViewBackgroundColor(int backgroundColor){
+    public DrawView setDrawViewBackgroundColor(int backgroundColor) {
         this.mBackgroundColor = backgroundColor;
         return this;
     }
 
     /**
-     *
      * Set the background paint for the view
+     *
      * @param backgroundPaint The background paint for the view
      * @return this instance of the view
      */
-    public DrawView setBackgroundPaint(SerializablePaint backgroundPaint){
+    public DrawView setBackgroundPaint(SerializablePaint backgroundPaint) {
         this.mBackgroundPaint = backgroundPaint;
         return this;
     }
@@ -1317,6 +1369,11 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     }
 
     // PRIVATE METHODS
+
+    @Override
+    protected int[] onCreateDrawableState(int extraSpace) {
+        return super.onCreateDrawableState(extraSpace);
+    }
 
     /**
      * Draw the background image on DrawViewCanvas
