@@ -14,18 +14,19 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 
+import com.byox.drawview.abstracts.DrawViewListener;
 import com.byox.drawview.enums.BackgroundScale;
 import com.byox.drawview.enums.BackgroundType;
 import com.byox.drawview.enums.DrawingCapture;
 import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingTool;
+import com.byox.drawview.interfaces.OnDrawViewListener;
 import com.byox.drawview.views.DrawView;
 import com.byox.drawviewproject.dialogs.DrawAttribsDialog;
 import com.byox.drawviewproject.dialogs.RequestTextDialog;
@@ -40,11 +41,12 @@ import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
 
-    // CONSTANTS
+    //region CONSTANTS
     private final int STORAGE_PERMISSIONS = 1000;
     private final int STORAGE_PERMISSIONS2 = 2000;
+    //endregion
 
-    // VIEWS
+    //region VIEWS
     private Toolbar mToolbar;
     private DrawView mDrawView;
 
@@ -52,16 +54,19 @@ public class MainActivity extends AppCompatActivity {
 
     private MenuItem mMenuItemRedo;
     private MenuItem mMenuItemUndo;
+    //endregion
 
-    // ADS
+    //region ADS
     private NativeExpressAdView mAdView;
+    //endregion
 
+    //region EVENTS
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mFabClearDraw = (FloatingActionButton) findViewById(R.id.fab_clear);
+        mFabClearDraw = findViewById(R.id.fab_clear);
 
         setupToolbar();
         setupDrawView();
@@ -143,28 +148,33 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
     }
+    //endregion
 
-    // METHODS
+    //region PRIVATE METHODS
     private void setupToolbar() {
-        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+        mToolbar = findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
         assert getSupportActionBar() != null;
         getSupportActionBar().setTitle(R.string.app_name);
     }
 
     private void setupDrawView() {
-        mDrawView = (DrawView) findViewById(R.id.draw_view);
+        mDrawView = findViewById(R.id.draw_view);
     }
 
     private void setListeners() {
-        mDrawView.setOnDrawViewListener(new DrawView.OnDrawViewListener() {
+        mDrawView.addDrawViewListener(new DrawViewListener() {
             @Override
             public void onStartDrawing() {
+                super.onStartDrawing();
+
                 canUndoRedo();
             }
 
             @Override
             public void onEndDrawing() {
+                super.onEndDrawing();
+
                 canUndoRedo();
 
                 if (mFabClearDraw.getVisibility() == View.INVISIBLE)
@@ -173,6 +183,8 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onClearDrawing() {
+                super.onClearDrawing();
+
                 canUndoRedo();
 
                 if (mFabClearDraw.getVisibility() == View.VISIBLE)
@@ -181,17 +193,19 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onRequestText() {
+                super.onRequestText();
+
                 RequestTextDialog requestTextDialog =
                         RequestTextDialog.newInstance("");
                 requestTextDialog.setOnRequestTextListener(new RequestTextDialog.OnRequestTextListener() {
                     @Override
                     public void onRequestTextConfirmed(String requestedText) {
-                        mDrawView.refreshLastText(requestedText);
+                        mDrawView.drawText(requestedText);
                     }
 
                     @Override
                     public void onRequestTextCancelled() {
-                        mDrawView.cancelTextRequest();
+                        //mDrawView.cancelTextRequest();
                     }
                 });
                 requestTextDialog.show(getSupportFragmentManager(), "requestText");
@@ -199,6 +213,8 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onAllMovesPainted() {
+                super.onAllMovesPainted();
+
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -207,6 +223,13 @@ public class MainActivity extends AppCompatActivity {
                             mFabClearDraw.setVisibility(View.VISIBLE);
                     }
                 }, 300);
+            }
+
+            @Override
+            public void onDrawingError(Exception e) {
+                super.onDrawingError(e);
+
+                e.printStackTrace();
             }
         });
 
@@ -219,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupADS() {
-        mAdView = (NativeExpressAdView) findViewById(R.id.adView);
+        mAdView = findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder()
                 .addTestDevice("FCFD13908AA93E51A1BA390FA8010631")
                 .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
@@ -299,7 +322,8 @@ public class MainActivity extends AppCompatActivity {
         selectImageDialog.setOnImageSelectListener(new SelectImageDialog.OnImageSelectListener() {
             @Override
             public void onSelectImage(File imageFile) {
-                mDrawView.setBackgroundImage(imageFile, BackgroundType.FILE, BackgroundScale.CENTER_CROP);
+                mDrawView.setBackgroundImage(imageFile, BackgroundType.FILE,
+                        BackgroundScale.CENTER_CROP, 60);
             }
 
             @Override
@@ -369,4 +393,5 @@ public class MainActivity extends AppCompatActivity {
                 chooseBackgroundImage();
         }
     }
+    //endregion
 }

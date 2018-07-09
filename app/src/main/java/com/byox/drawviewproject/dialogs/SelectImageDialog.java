@@ -1,30 +1,21 @@
 package com.byox.drawviewproject.dialogs;
 
+import android.annotation.SuppressLint;
 import android.app.Dialog;
-import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
-import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialogFragment;
 import android.support.design.widget.CoordinatorLayout;
-import android.support.v4.app.DialogFragment;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.os.AsyncTaskCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.Window;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import com.byox.drawviewproject.R;
 import com.byox.drawviewproject.adapters.PhotoAdapter;
@@ -79,11 +70,11 @@ public class SelectImageDialog extends BottomSheetDialogFragment {
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                AsyncTaskCompat.executeParallel(new LoadImagesFromStorage());
+                new LoadImagesFromStorage().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }
         });
 
-        AsyncTaskCompat.executeParallel(new LoadImagesFromStorage());
+        new LoadImagesFromStorage().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 
         setListeners();
 
@@ -128,6 +119,7 @@ public class SelectImageDialog extends BottomSheetDialogFragment {
         });
     }
 
+    @SuppressLint("StaticFieldLeak")
     private class LoadImagesFromStorage extends AsyncTask<Void, Void, Void>{
         private List<File> imageList;
 

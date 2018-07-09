@@ -40,7 +40,16 @@ public class BitmapUtils {
         return Bitmap.createScaledBitmap(bitmapSrc, newWidth, newHeight, true);
     }
 
-    public static byte[] GetCompressedImage(Object image, BackgroundType backgroundType, int compressQuality) {
+    public static Bitmap CreateBitmapMatchesViewSize(int viewWidth, Bitmap bitmapSrc) {
+        int currentBitmapWidth = bitmapSrc.getWidth();
+        int currentBitmapHeight = bitmapSrc.getHeight();
+
+        int newHeight = (int) Math.floor((double) currentBitmapHeight * ((double) viewWidth / (double) currentBitmapWidth));
+
+        return Bitmap.createScaledBitmap(bitmapSrc, viewWidth, newHeight, true);
+    }
+
+    public static byte[] GetCompressedImage(Object image, BackgroundType backgroundType, int compressQuality, boolean recycleSource) {
 
         Bitmap bmp = null;
         Bitmap scaledBitmap = null;
@@ -114,13 +123,7 @@ public class BitmapUtils {
                 bmp = BitmapFactory.decodeByteArray((byte[]) image, 0, ((byte[]) image).length);
                 break;
         }
-        /*try {
-//          load the bitmap from its path
-            bmp = BitmapFactory.decodeFile(image.getAbsolutePath(), options);
-        } catch (OutOfMemoryError exception) {
-            exception.printStackTrace();
 
-        }*/
         try {
             scaledBitmap = Bitmap.createBitmap(actualWidth, actualHeight, Bitmap.Config.ARGB_8888);
         } catch (OutOfMemoryError exception) {
@@ -168,26 +171,13 @@ public class BitmapUtils {
             e.printStackTrace();
         }
 
-//        try {
-//            returnFile = File.createTempFile("temp", "." + (
-//                    image.getAbsolutePath().toLowerCase().endsWith("jpg") ? "jpg" : "png"));
-//            FileOutputStream out = null;
-//            String filename = returnFile.getAbsolutePath();
         ByteArrayOutputStream stream = null;
-//            try {
-//                out = new FileOutputStream(filename);
         stream = new ByteArrayOutputStream();
 
 //          write the compressed bitmap at the destination specified by filename.
         scaledBitmap.compress(Bitmap.CompressFormat.PNG, compressQuality, stream);
-        bmp.recycle();
 
-//            } catch (FileNotFoundException e) {
-//                e.printStackTrace();
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        if (recycleSource) bmp.recycle();
 
         return stream.toByteArray();
 
@@ -212,9 +202,15 @@ public class BitmapUtils {
         return inSampleSize;
     }
 
-    public static Bitmap GetBitmapForDrawView(DrawView drawView, Object image, BackgroundType backgroundType, int imageQuality) {
-        byte[] imageInBytes = BitmapUtils.GetCompressedImage(image, backgroundType, imageQuality);
+    public static Bitmap GetBitmapForDrawView(DrawView drawView, Object image, BackgroundType backgroundType, int imageQuality, boolean recycleSoruce) {
+        byte[] imageInBytes = BitmapUtils.GetCompressedImage(image, backgroundType, imageQuality, recycleSoruce);
         return BitmapUtils.CreateBitmapMatchesViewSize(drawView,
+                BitmapFactory.decodeByteArray(imageInBytes, 0, imageInBytes.length));
+    }
+
+    public static Bitmap GetBitmapForDrawView(int viewWidth, Object image, BackgroundType backgroundType, int imageQuality, boolean recycleSoruce) {
+        byte[] imageInBytes = BitmapUtils.GetCompressedImage(image, backgroundType, imageQuality, recycleSoruce);
+        return BitmapUtils.CreateBitmapMatchesViewSize(viewWidth,
                 BitmapFactory.decodeByteArray(imageInBytes, 0, imageInBytes.length));
     }
 

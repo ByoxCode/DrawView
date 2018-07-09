@@ -1,6 +1,5 @@
 package com.byox.drawviewproject;
 
-import android.*;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -21,24 +20,19 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 
-import com.byox.drawview.enums.BackgroundScale;
-import com.byox.drawview.enums.BackgroundType;
+import com.byox.drawview.abstracts.DrawViewListener;
 import com.byox.drawview.enums.DrawingCapture;
 import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingTool;
-import com.byox.drawview.utils.BitmapUtils;
 import com.byox.drawview.views.DrawCameraView;
 import com.byox.drawview.views.DrawView;
 import com.byox.drawviewproject.dialogs.DrawAttribsDialog;
 import com.byox.drawviewproject.dialogs.RequestTextDialog;
 import com.byox.drawviewproject.dialogs.SaveBitmapDialog;
 import com.byox.drawviewproject.dialogs.SelectChoiceDialog;
-import com.byox.drawviewproject.dialogs.SelectImageDialog;
 import com.byox.drawviewproject.utils.AnimateUtils;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.NativeExpressAdView;
-
-import java.io.File;
 
 public class CameraActivity extends AppCompatActivity {
 
@@ -162,14 +156,16 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     private void setListeners() {
-        mDrawView.setOnDrawViewListener(new DrawView.OnDrawViewListener() {
+        mDrawView.addDrawViewListener(new DrawViewListener() {
             @Override
             public void onStartDrawing() {
+                super.onStartDrawing();
                 canUndoRedo();
             }
 
             @Override
             public void onEndDrawing() {
+                super.onEndDrawing();
                 canUndoRedo();
 
                 if (mFabClearDraw.getVisibility() == View.INVISIBLE)
@@ -178,6 +174,7 @@ public class CameraActivity extends AppCompatActivity {
 
             @Override
             public void onClearDrawing() {
+                super.onClearDrawing();
                 canUndoRedo();
 
                 if (mFabClearDraw.getVisibility() == View.VISIBLE)
@@ -186,17 +183,18 @@ public class CameraActivity extends AppCompatActivity {
 
             @Override
             public void onRequestText() {
+                super.onRequestText();
                 RequestTextDialog requestTextDialog =
                         RequestTextDialog.newInstance("");
                 requestTextDialog.setOnRequestTextListener(new RequestTextDialog.OnRequestTextListener() {
                     @Override
                     public void onRequestTextConfirmed(String requestedText) {
-                        mDrawView.refreshLastText(requestedText);
+                        mDrawView.drawText(requestedText);
                     }
 
                     @Override
                     public void onRequestTextCancelled() {
-                        mDrawView.cancelTextRequest();
+                        //mDrawView.cancelTextRequest();
                     }
                 });
                 requestTextDialog.show(getSupportFragmentManager(), "requestText");
@@ -204,6 +202,7 @@ public class CameraActivity extends AppCompatActivity {
 
             @Override
             public void onAllMovesPainted() {
+                super.onAllMovesPainted();
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -212,6 +211,13 @@ public class CameraActivity extends AppCompatActivity {
                             mFabClearDraw.setVisibility(View.VISIBLE);
                     }
                 }, 300);
+            }
+
+            @Override
+            public void onDrawingError(Exception e) {
+                super.onDrawingError(e);
+
+                e.printStackTrace();
             }
         });
 

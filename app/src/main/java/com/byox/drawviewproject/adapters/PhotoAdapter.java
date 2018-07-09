@@ -1,6 +1,8 @@
 package com.byox.drawviewproject.adapters;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -36,27 +38,28 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.ViewHolder> 
 //        this.isVertical = isVertical;
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    static class ViewHolder extends RecyclerView.ViewHolder {
         CardView cardView;
         ImageView imageView;
 
-        public ViewHolder(View v) {
+        ViewHolder(View v) {
             super(v);
             cardView = (CardView) v.findViewById(R.id.cv_photo_item);
             imageView = (ImageView) v.findViewById(R.id.iv_photo_item);
         }
     }
 
+    @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         mContext = parent.getContext();
         return new ViewHolder(LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.layout_photo, parent, false));
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, final int position) {
-        Picasso.with(mContext).load(mFileList.get(position)).memoryPolicy(MemoryPolicy.NO_CACHE)
+    public void onBindViewHolder(@NonNull ViewHolder holder, @SuppressLint("RecyclerView") final int position) {
+        Picasso.get().load(mFileList.get(position)).memoryPolicy(MemoryPolicy.NO_CACHE)
                 .placeholder(R.color.colorBlackSemitrans).fit().centerCrop().into(holder.imageView);
 
         if (mOnClickListener != null) {

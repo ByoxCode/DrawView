@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "258930062413",
+    "firebase_url": "https://drawviewproject.firebaseio.com",
+    "project_id": "drawviewproject",
+    "storage_bucket": "drawviewproject.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:258930062413:android:5e7e08aa47d52a52",
+        "android_client_info": {
+          "package_name": "com.byox.drawviewproject"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "258930062413-jvumulupkkhrp0tdrrob7krgba4b512j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.byox.drawviewproject",
+            "certificate_hash": "aa7ff0da359d8d8ad0a42e89ce9861da8e1ee48f"
+          }
+        },
+        {
+          "client_id": "258930062413-oer7d3943gho0hcc59b6m45le4nkc79s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsN7CSBg_ag-itKpwPi49ut4BNDOjrhu8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "258930062413-oer7d3943gho0hcc59b6m45le4nkc79s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

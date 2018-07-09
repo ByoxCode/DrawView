@@ -7,5 +7,8 @@ package com.byox.drawview.enums;
 public enum BackgroundType {
     FILE,
     BITMAP,
-    BYTES
+    BYTES,
+    RESOURCE,
+    URL,
+    ASSET
 }
