@@ -14,30 +14,35 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
+import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.byox.drawview.abstracts.DrawViewListener;
 import com.byox.drawview.enums.BackgroundScale;
 import com.byox.drawview.enums.BackgroundType;
 import com.byox.drawview.enums.DrawingCapture;
 import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingTool;
-import com.byox.drawview.interfaces.OnDrawViewListener;
 import com.byox.drawview.views.DrawView;
 import com.byox.drawviewproject.dialogs.DrawAttribsDialog;
-import com.byox.drawviewproject.dialogs.RequestTextDialog;
 import com.byox.drawviewproject.dialogs.SaveBitmapDialog;
-import com.byox.drawviewproject.dialogs.SelectChoiceDialog;
 import com.byox.drawviewproject.dialogs.SelectImageDialog;
 import com.byox.drawviewproject.utils.AnimateUtils;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.NativeExpressAdView;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import jp.wasabeef.picasso.transformations.BlurTransformation;
+import jp.wasabeef.picasso.transformations.GrayscaleTransformation;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -51,9 +56,11 @@ public class MainActivity extends AppCompatActivity {
     private DrawView mDrawView;
 
     private FloatingActionButton mFabClearDraw;
+    private CardView mCardViewLoadingBackground;
 
     private MenuItem mMenuItemRedo;
     private MenuItem mMenuItemUndo;
+    private MenuItem mMenuItemExcludeBackEraser;
     //endregion
 
     //region ADS
@@ -67,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mFabClearDraw = findViewById(R.id.fab_clear);
+        mCardViewLoadingBackground = findViewById(R.id.cv_loading_card);
 
         setupToolbar();
         setupDrawView();
@@ -79,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         mMenuItemUndo = menu.getItem(0);
         mMenuItemRedo = menu.getItem(1);
+        mMenuItemExcludeBackEraser = menu.findItem(R.id.action_view_exclude_background_from_eraser);
         return true;
     }
 
@@ -98,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             case R.id.action_draw_attrs:
-                changeDrawAttribs();
+                changeDrawAttributes();
                 break;
             case R.id.action_draw_background:
                 requestPermissions(1);
@@ -116,36 +125,32 @@ public class MainActivity extends AppCompatActivity {
                 Intent i = new Intent(MainActivity.this, CameraActivity.class);
                 i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(i);
+                finish();
+                break;
+            case R.id.action_view_exclude_background_from_eraser:
+                mMenuItemExcludeBackEraser.setChecked(!item.isChecked());
+                mDrawView.excludeBackgroundFromEraser(mMenuItemExcludeBackEraser.isChecked());
                 break;
         }
         return super.onOptionsItemSelected(item);
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case STORAGE_PERMISSIONS:
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
+    public void onRequestPermissionsResult(final int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (permissions.length == grantResults.length){
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    switch (requestCode) {
+                        case STORAGE_PERMISSIONS:
                             saveDraw();
-                        }
-                    }, 600);
-                }
-                break;
-            case STORAGE_PERMISSIONS2:
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
+                            break;
+                        case STORAGE_PERMISSIONS2:
                             chooseBackgroundImage();
-                        }
-                    }, 600);
+                            break;
+                    }
                 }
-                break;
+            }, 300);
         }
     }
     //endregion
@@ -167,8 +172,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onStartDrawing() {
                 super.onStartDrawing();
-
-                canUndoRedo();
             }
 
             @Override
@@ -194,21 +197,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onRequestText() {
                 super.onRequestText();
-
-                RequestTextDialog requestTextDialog =
-                        RequestTextDialog.newInstance("");
-                requestTextDialog.setOnRequestTextListener(new RequestTextDialog.OnRequestTextListener() {
-                    @Override
-                    public void onRequestTextConfirmed(String requestedText) {
-                        mDrawView.drawText(requestedText);
-                    }
-
-                    @Override
-                    public void onRequestTextCancelled() {
-                        //mDrawView.cancelTextRequest();
-                    }
-                });
-                requestTextDialog.show(getSupportFragmentManager(), "requestText");
+                requestText();
             }
 
             @Override
@@ -222,7 +211,23 @@ public class MainActivity extends AppCompatActivity {
                         if (!mDrawView.isDrawViewEmpty())
                             mFabClearDraw.setVisibility(View.VISIBLE);
                     }
-                }, 300);
+                }, 200);
+            }
+
+            @Override
+            public void onDrawBackgroundStart() {
+                super.onDrawBackgroundStart();
+
+                if (mCardViewLoadingBackground.getVisibility() == View.INVISIBLE)
+                    AnimateUtils.ScaleInAnimation(mCardViewLoadingBackground, 50, 300, new OvershootInterpolator(), true);
+            }
+
+            @Override
+            public void onDrawBackgroundEnds(byte[] bytes, BackgroundType originBackgroundType) {
+                super.onDrawBackgroundEnds(bytes, originBackgroundType);
+
+                if (mCardViewLoadingBackground.getVisibility() == View.VISIBLE)
+                    AnimateUtils.ScaleOutAnimation(mCardViewLoadingBackground, 50, 300, new OvershootInterpolator(), true);
             }
 
             @Override
@@ -251,46 +256,66 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void changeDrawTool() {
-        SelectChoiceDialog selectChoiceDialog =
-                SelectChoiceDialog.newInstance("Select a draw tool",
-                        "PEN", "LINE", "ARROW", "RECTANGLE", "CIRCLE", "ELLIPSE");
-        selectChoiceDialog.setOnChoiceDialogListener(new SelectChoiceDialog.OnChoiceDialogListener() {
-            @Override
-            public void onChoiceSelected(int position) {
-                mDrawView.setDrawingTool(DrawingTool.values()[position]);
-            }
-        });
-        selectChoiceDialog.show(getSupportFragmentManager(), "choiceDialog");
+        int currentTool = 0;
+        List<String> tools = new ArrayList<>();
+
+        for (int i = 0; i < DrawingTool.values().length; i++){
+            tools.add(DrawingTool.values()[i].toString());
+            if (DrawingTool.values()[i] == mDrawView.getDrawingTool()) currentTool = i;
+        }
+
+        new MaterialDialog.Builder(this)
+                .title(R.string.choose_draw_tool_tile)
+                .items(tools)
+                .itemsCallbackSingleChoice(currentTool, new MaterialDialog.ListCallbackSingleChoice() {
+                    @Override
+                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
+                        mDrawView.tool(DrawingTool.values()[which]);
+                        return true;
+                    }
+                })
+                .positiveText(android.R.string.ok)
+                .show();
     }
 
     private void changeDrawMode() {
-        SelectChoiceDialog selectChoiceDialog =
-                SelectChoiceDialog.newInstance("Select a draw mode",
-                        "DRAW", "TEXT", "ERASER");
-        selectChoiceDialog.setOnChoiceDialogListener(new SelectChoiceDialog.OnChoiceDialogListener() {
-            @Override
-            public void onChoiceSelected(int position) {
-                mDrawView.setDrawingMode(DrawingMode.values()[position]);
-            }
-        });
-        selectChoiceDialog.show(getSupportFragmentManager(), "choiceDialog");
+        int currentMode = 0;
+        List<String> modes = new ArrayList<>();
+
+        for (int i = 0; i < DrawingMode.values().length; i++){
+            modes.add(DrawingMode.values()[i].toString());
+            if (DrawingMode.values()[i] == mDrawView.getDrawingMode()) currentMode = i;
+        }
+
+        new MaterialDialog.Builder(this)
+                .title(R.string.choose_draw_mode_tile)
+                .items(modes)
+                .itemsCallbackSingleChoice(currentMode, new MaterialDialog.ListCallbackSingleChoice() {
+                    @Override
+                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
+                        mDrawView.mode(DrawingMode.values()[which]);
+                        return true;
+                    }
+                })
+                .positiveText(android.R.string.ok)
+                .show();
     }
 
-    private void changeDrawAttribs() {
+    private void changeDrawAttributes() {
         DrawAttribsDialog drawAttribsDialog = DrawAttribsDialog.newInstance();
         drawAttribsDialog.setPaint(mDrawView.getCurrentPaintParams());
         drawAttribsDialog.setOnCustomViewDialogListener(new DrawAttribsDialog.OnCustomViewDialogListener() {
             @Override
             public void onRefreshPaint(Paint newPaint) {
-                mDrawView.setDrawColor(newPaint.getColor())
-                        .setPaintStyle(newPaint.getStyle())
-                        .setDither(newPaint.isDither())
-                        .setDrawWidth((int) newPaint.getStrokeWidth())
-                        .setDrawAlpha(newPaint.getAlpha())
-                        .setAntiAlias(newPaint.isAntiAlias())
-                        .setLineCap(newPaint.getStrokeCap())
-                        .setFontFamily(newPaint.getTypeface())
-                        .setFontSize(newPaint.getTextSize());
+                mDrawView.color(newPaint.getColor())
+                        .paintStyle(newPaint.getStyle())
+                        .dither(newPaint.isDither())
+                        .width((int) newPaint.getStrokeWidth())
+                        .alpha(newPaint.getAlpha())
+                        .antiAlias(newPaint.isAntiAlias())
+                        .lineCap(newPaint.getStrokeCap())
+                        .fontFamily(newPaint.getTypeface())
+                        .fontSize(newPaint.getTextSize());
 //                If you prefer, you can easily refresh new attributes using this method
 //                mDrawView.refreshAttributes(newPaint);
             }
@@ -318,20 +343,78 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void chooseBackgroundImage() {
+        new MaterialDialog.Builder(this)
+                .title(R.string.choose_background_title)
+                .items(R.array.image_source)
+                .itemsCallbackSingleChoice(0, new MaterialDialog.ListCallbackSingleChoice() {
+                    @Override
+                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
+                        if (which == 0) {
+                            chooseBackgroundImageFile();
+                        } else if (which == 1) {
+                            chooseBackgroundImageURL();
+                        }
+                        return true;
+                    }
+                })
+                .positiveText(android.R.string.ok)
+                .show();
+    }
+
+    private void chooseBackgroundImageFile() {
         SelectImageDialog selectImageDialog = SelectImageDialog.newInstance();
         selectImageDialog.setOnImageSelectListener(new SelectImageDialog.OnImageSelectListener() {
             @Override
             public void onSelectImage(File imageFile) {
-                mDrawView.setBackgroundImage(imageFile, BackgroundType.FILE,
-                        BackgroundScale.CENTER_CROP, 60);
+                mDrawView
+                        .backgroundImage(
+                                imageFile,
+                                BackgroundType.FILE,
+                                BackgroundScale.CENTER_CROP,
+                                60,
+                                new BlurTransformation(getApplicationContext(), 20, 20),
+                                new GrayscaleTransformation())
+                        .processBackground();
             }
 
             @Override
             public void onSelectImage(byte[] imageBytes) {
-                //mDrawView.setBackgroundImage(imageBytes, BackgroundType.BYTES, BackgroundScale.FIT_START);
+                //mDrawView.backgroundImage(imageBytes, BackgroundType.BYTES, BackgroundScale.FIT_START);
             }
         });
         selectImageDialog.show(getSupportFragmentManager(), SelectImageDialog.SELEC_IMAGE_DIALOG);
+    }
+
+    private void chooseBackgroundImageURL() {
+        new MaterialDialog.Builder(this)
+                .title(R.string.choose_background_title)
+                .inputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI)
+                .input(R.string.choose_background_url, R.string.choose_background_url_default,
+                        new MaterialDialog.InputCallback() {
+                            @Override
+                            public void onInput(MaterialDialog dialog, CharSequence input) {
+                                mDrawView
+                                        .backgroundImage(
+                                                input.toString(),
+                                                BackgroundType.URL,
+                                                BackgroundScale.CENTER_CROP,
+                                                60)
+                                        .processBackground();
+                            }
+                        }).show();
+    }
+
+    private void requestText(){
+        new MaterialDialog.Builder(this)
+                .title(R.string.request_text_title)
+                .inputType(InputType.TYPE_CLASS_TEXT)
+                .input(getString(R.string.request_text), "",
+                        new MaterialDialog.InputCallback() {
+                            @Override
+                            public void onInput(MaterialDialog dialog, CharSequence input) {
+                                mDrawView.drawText(input.toString());
+                            }
+                        }).show();
     }
 
     private void clearDraw() {
@@ -357,7 +440,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void requestPermissions(int option) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (option == 0) {
+            if (option == 0 || option == 1) {
                 if (ContextCompat.checkSelfPermission(MainActivity.this,
                         Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
                         || ContextCompat.checkSelfPermission(MainActivity.this,
@@ -367,30 +450,21 @@ public class MainActivity extends AppCompatActivity {
                             new String[]{
                                     Manifest.permission.READ_EXTERNAL_STORAGE,
                                     Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                            STORAGE_PERMISSIONS);
+                            option == 1 ? STORAGE_PERMISSIONS : STORAGE_PERMISSIONS2);
                 } else {
-                    saveDraw();
-                }
-            } else if (option == 1) {
-                if (ContextCompat.checkSelfPermission(MainActivity.this,
-                        Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                        || ContextCompat.checkSelfPermission(MainActivity.this,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-
-                    ActivityCompat.requestPermissions(MainActivity.this,
-                            new String[]{
-                                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                                    Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                            STORAGE_PERMISSIONS2);
-                } else {
-                    chooseBackgroundImage();
+                    if (option == 0) saveDraw();
+                    else chooseBackgroundImage();
                 }
             }
         } else {
-            if (option == 0)
-                saveDraw();
-            else if (option == 1)
-                chooseBackgroundImage();
+            switch (option){
+                case 0:
+                    saveDraw();
+                    break;
+                case 1:
+                    chooseBackgroundImage();
+                    break;
+            }
         }
     }
     //endregion

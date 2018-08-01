@@ -2,6 +2,7 @@ package com.byox.drawview.abstracts;
 
 import android.graphics.Bitmap;
 
+import com.byox.drawview.enums.BackgroundType;
 import com.byox.drawview.interfaces.OnDrawViewListener;
 
 public abstract class DrawViewListener implements OnDrawViewListener{
@@ -32,12 +33,17 @@ public abstract class DrawViewListener implements OnDrawViewListener{
     }
 
     @Override
-    public void onBackgroundLoaded(Bitmap bitmap) {
+    public void onDrawBackgroundStart() {
 
     }
 
     @Override
-    public void onBackgroundLoaded(byte[] bytes) {
+    public void onDrawBackgroundEnds(Bitmap bitmap, BackgroundType originBackgroundType) {
+
+    }
+
+    @Override
+    public void onDrawBackgroundEnds(byte[] bytes, BackgroundType originBackgroundType) {
 
     }
 

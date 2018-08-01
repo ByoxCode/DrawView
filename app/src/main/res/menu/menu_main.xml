@@ -43,6 +43,11 @@
                 android:id="@+id/action_view_camera_option"
                 android:icon="@drawable/ic_action_photo_camera"
                 android:title="@string/camera_option" />
+            <item
+                android:id="@+id/action_view_exclude_background_from_eraser"
+                android:title="@string/exclude_back_eraser"
+                android:checkable="true"
+                android:checked="false"/>
         </menu>
     </item>
 </menu>

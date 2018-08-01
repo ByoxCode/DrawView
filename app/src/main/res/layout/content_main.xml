@@ -29,7 +29,41 @@
         app:dv_draw_width="4"
         app:dv_draw_zoomregion_maxscale="5"
         app:dv_draw_zoomregion_minscale="2"
-        app:dv_draw_zoomregion_scale="4"/>
+        app:dv_draw_zoomregion_scale="4" />
+
+    <android.support.v7.widget.CardView
+        android:id="@+id/cv_loading_card"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="invisible"
+        app:cardCornerRadius="6dp"
+        app:cardElevation="6dp"
+        app:cardPreventCornerOverlap="true"
+        app:cardUseCompatPadding="true">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="6dp"
+            android:orientation="vertical">
+
+            <ProgressBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:layout_gravity="center_horizontal" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:gravity="center"
+                android:text="@string/placeholder_loading_background" />
+
+        </LinearLayout>
+
+    </android.support.v7.widget.CardView>
 
     <com.google.android.gms.ads.NativeExpressAdView
         android:id="@+id/adView"

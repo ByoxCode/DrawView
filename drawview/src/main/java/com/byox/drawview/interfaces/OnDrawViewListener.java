@@ -2,6 +2,8 @@ package com.byox.drawview.interfaces;
 
 import android.graphics.Bitmap;
 
+import com.byox.drawview.enums.BackgroundType;
+
 /**
  * Listener for registering drawing actions of the view
  *
@@ -13,7 +15,8 @@ public interface OnDrawViewListener {
     void onClearDrawing();
     void onRequestText();
     void onAllMovesPainted();
-    void onBackgroundLoaded(Bitmap bitmap);
-    void onBackgroundLoaded(byte[] bytes);
+    void onDrawBackgroundStart();
+    void onDrawBackgroundEnds(Bitmap bitmap, BackgroundType originBackgroundType);
+    void onDrawBackgroundEnds(byte[] bytes, BackgroundType originBackgroundType);
     void onDrawingError(Exception e);
 }

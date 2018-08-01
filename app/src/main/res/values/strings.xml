@@ -13,8 +13,18 @@
     <string name="draw_tool">Draw tool</string>
     <string name="draw_mode">Draw mode</string>
     <string name="save_draw">Save draw</string>
-    <string name="camera_option">Camera option</string>
+    <string name="camera_option">DrawCameraView option</string>
     <string name="draw_option">DrawView option</string>
+    <string name="exclude_back_eraser">Exclude back at eraser</string>
+
+    <!-- DIALOGS -->
+    <string name="choose_draw_mode_tile">Select draw mode</string>
+    <string name="choose_draw_tool_tile">Select draw tool</string>
+    <string name="choose_background_title">BACKGROUND</string>
+    <string name="choose_background_url">URL of the image</string>
+    <string name="choose_background_url_default">http://hdqwalls.com/wallpapers/deadpool-abstract-art.jpg</string>
+    <string name="request_text_title">Write a text</string>
+    <string name="request_text">Requested text</string>
 
     <!-- ADS -->
     <string name="banner_ad_unit_id">ca-app-pub-6238951090454835/7400289908</string>

@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.media.ExifInterface;
 import android.util.Log;
@@ -214,11 +215,89 @@ public class BitmapUtils {
                 BitmapFactory.decodeByteArray(imageInBytes, 0, imageInBytes.length));
     }
 
-    public static Bitmap GetCombinedBitmaps(Bitmap bmp1, Bitmap bmp2, int destWidth, int destHeight) {
+    /*public static Bitmap GetCombinedBitmaps(Bitmap bmp1, Bitmap bmp2, int destWidth, int destHeight) {
         Bitmap bmOverlay = Bitmap.createBitmap(destWidth, destHeight, bmp1.getConfig());
         Canvas canvas = new Canvas(bmOverlay);
         canvas.drawBitmap(bmp1, new Matrix(), null);
         canvas.drawBitmap(bmp2, 0, 0, null);
         return bmOverlay;
+    }*/
+
+    /**
+     * Combine two bitmap (in byte array format) in same byte array
+     *
+     * @param baseImage    base byte array bitmap
+     * @param overlayImage overlay byte array bitmap
+     * @param config       output configuration
+     * @param compressFormat    compress format for final image
+     * @return combined byte array
+     * @throws IOException if the file cannot be created
+     */
+    public static byte[] CombineBitmapArraysInSameBitmap(byte[] baseImage, byte[] overlayImage, Bitmap.Config config, Bitmap.CompressFormat compressFormat) throws IOException {
+        Point frameBitmapSize = GetImageSize(baseImage);
+        Point overlayBitmapSize = GetImageSize(overlayImage);
+        Bitmap resultBitmap = Bitmap.createBitmap(frameBitmapSize.x, frameBitmapSize.y, config);
+
+        Canvas canvas = new Canvas(resultBitmap);
+        canvas.drawBitmap(resultBitmap, new Matrix(), (Paint)null);
+        canvas.drawBitmap(BitmapFactory.decodeByteArray(baseImage, 0, baseImage.length), 0.0F, 0.0F, (Paint)null);
+        //byte[] scaledOverlay = GetScaledImageBytesFromBytes(overlayImage, frameBitmapSize.x, frameBitmapSize.y, Bitmap.CompressFormat.PNG, 100);
+        canvas.drawBitmap(BitmapFactory.decodeByteArray(overlayImage, 0, overlayImage.length),
+                new Rect(0, 0, overlayBitmapSize.x, overlayBitmapSize.y),
+                new RectF(0, 0, frameBitmapSize.x, frameBitmapSize.y), (Paint)null);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        resultBitmap.compress(compressFormat, 100, byteArrayOutputStream);
+        byte[] finalBitmap = byteArrayOutputStream.toByteArray();
+        byteArrayOutputStream.close();
+        resultBitmap.recycle();
+        return finalBitmap;
+    }
+
+    /**
+     * Get pixel size of image
+     *
+     * @param imageBytes    Source image file in byte array
+     * @return              Point object that contains with and height in x and y properties
+     */
+    public static Point GetImageSize(byte[] imageBytes) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+
+        BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length, options);
+        int width = options.outWidth;
+        int height = options.outHeight;
+
+        String type = options.outMimeType;
+        return new Point(width, height);
+    }
+
+    /**
+     * Get scaled image byte array from bitmap source
+     * @param imageBytes        Image source bytes to be scaled
+     * @param targetW           Image target width
+     * @param targetH           Image target height
+     * @param compressFormat    Image compress format
+     * @param imageQuality      Image compress quality
+     * @return                  Byte array of scaled image
+     */
+    public static byte[] GetScaledImageBytesFromBytes(byte[] imageBytes, int targetW, int targetH, Bitmap.CompressFormat compressFormat, int imageQuality) {
+        BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+        bitmapOptions.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length, bitmapOptions);
+
+        int photoW = bitmapOptions.outWidth;
+        int photoH = bitmapOptions.outHeight;
+
+        int scaleFactor = Math.min(photoW/targetW, photoH/targetH);
+
+        bitmapOptions.inJustDecodeBounds = false;
+        bitmapOptions.inSampleSize = scaleFactor;
+        bitmapOptions.inPurgeable = true;
+
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length, bitmapOptions)
+                .compress(compressFormat, imageQuality, stream);
+
+        return stream.toByteArray();
     }
 }

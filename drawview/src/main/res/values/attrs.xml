@@ -45,4 +45,108 @@
         </attr>
         <attr name="dv_draw_is_camera" format="boolean"/>
     </declare-styleable>
+
+    <declare-styleable name="DrawCameraView">
+        <attr name="dcv_draw_color" format="color"/>
+        <attr name="dcv_draw_tool" format="enum">
+            <enum name="pen" value="0"/>
+            <enum name="line" value="1"/>
+            <enum name="rectangle" value="2"/>
+            <enum name="circle" value="3"/>
+        </attr>
+        <attr name="dcv_draw_mode" format="enum">
+            <enum name="draw" value="0"/>
+            <enum name="text" value="1"/>
+            <enum name="eraser" value="2"/>
+        </attr>
+        <attr name="dcv_draw_width" format="integer"/>
+        <attr name="dcv_draw_alpha" format="integer"/>
+        <attr name="dcv_draw_anti_alias" format="boolean"/>
+        <attr name="dcv_draw_dither" format="boolean"/>
+        <attr name="dcv_draw_style" format="enum">
+            <enum name="fill" value="0"/>
+            <enum name="fill_stroke" value="1"/>
+            <enum name="stroke" value="2"/>
+        </attr>
+        <attr name="dcv_draw_corners" format="enum">
+            <enum name="butt" value="0"/>
+            <enum name="round" value="1"/>
+            <enum name="square" value="2"/>
+        </attr>
+        <attr name="dcv_draw_font_family" format="enum">
+            <enum name="default_font" value="0"/>
+            <enum name="monospace" value="1"/>
+            <enum name="sans_serif" value="2"/>
+            <enum name="serif" value="3"/>
+        </attr>
+        <attr name="dcv_draw_font_size" format="integer"/>
+        <attr name="dcv_draw_enable_zoom" format="boolean"/>
+        <attr name="dcv_draw_max_zoom_factor" format="float"/>
+        <attr name="dcv_draw_zoomregion_scale" format="float"/>
+        <attr name="dcv_draw_zoomregion_minscale" format="float"/>
+        <attr name="dcv_draw_zoomregion_maxscale" format="float"/>
+        <attr name="dcv_draw_orientation" format="enum">
+            <enum name="portrait" value="0"/>
+            <enum name="landscape" value="1"/>
+        </attr>
+
+        <!-- ATTRIBUTES FOR CAMERA VIEW -->
+        <attr name="dcvckFacing" format="enum">
+            <enum name="back" value="0" />
+            <enum name="front" value="1" />
+        </attr>
+
+        <attr name="dcvckFlash" format="enum">
+            <enum name="off" value="0" />
+            <enum name="on" value="1" />
+            <enum name="auto" value="2" />
+            <enum name="torch" value="3" />
+        </attr>
+
+        <attr name="dcvckFocus" format="enum">
+            <enum name="off" value="0" />
+            <enum name="continuous" value="1" />
+            <!--<enum name="tap" value="2" />
+            <enum name="tapWithMarker" value="3" />-->
+        </attr>
+
+        <!--<attr name="dcvckPinchToZoom" format="boolean" />
+
+        <attr name="dcvckZoom" format="float" />-->
+
+        <attr name="dcvckMethod" format="enum">
+            <enum name="standard" value="0" />
+            <enum name="still" value="1" />
+
+            <!-- TODO: Set to unique value when feature added -->
+            <enum name="speed" value="0" />
+        </attr>
+
+        <!--<attr name="dcvckPermissions" format="enum">
+            <enum name="strict" value="0" />
+            <enum name="lazy" value="1" />
+            <enum name="picture" value="2" />
+        </attr>-->
+
+        <attr name="dcvckJpegQuality" format="integer" />
+
+        <attr name="dcvckVideoQuality" format="enum">
+            <enum name="max480p" value="0" />
+            <enum name="max720p" value="1" />
+            <enum name="max1080p" value="2" />
+            <enum name="max2160p" value="3" />
+            <enum name="highest" value="4" />
+            <enum name="lowest" value="5" />
+            <enum name="qvga" value="6" />
+        </attr>
+
+        <!--<attr name="dcvckCropOutput" format="boolean" />-->
+
+        <attr name="dcvckVideoBitRate" format="integer" />
+
+        <!--<attr name="dcvckDoubleTapToToggleFacing" format="boolean" />-->
+        <attr name="dcvckLockVideoAspectRatio" format="boolean" />
+
+        <attr name="android:adjustViewBounds" />
+    </declare-styleable>
 </resources>
