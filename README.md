@@ -42,19 +42,19 @@ Snapshot
 
 Import from:
 ```groovy
-  maven { url "https://raw.githubusercontent.com/ByoxCode/DrawView/snapshot/aar" }
+  maven { url "https://raw.githubusercontent.com/ByoxCode/DrawView/snapshot/aar/snapshots/" }
 ```
 
 With Gradle:
 ```groovy
-  implementation 'com.byox.drawview:drawview:X.X.X'
+  implementation 'com.byox.drawview:drawview:X.X.X-SNAPSHOT'
 ```
 or Maven:
 ```xml
 <dependency>
   <groupId>com.byox.drawview</groupId>
   <artifactId>drawview</artifactId>
-  <version>X.X.X</version>
+  <version>X.X.X-SNAPSHOT</version>
   <type>pom</type>
 </dependency>
 ```
