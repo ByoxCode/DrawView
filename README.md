@@ -23,7 +23,7 @@ Usage
 
 With Gradle:
 ```groovy
-  compile 'com.byox.drawview:drawview:X.X.X'
+  implementation 'com.byox.drawview:drawview:X.X.X'
 ```
 or Maven:
 ```xml
@@ -47,7 +47,7 @@ Import from:
 
 With Gradle:
 ```groovy
-  compile 'com.byox.drawview:drawview:X.X.X'
+  implementation 'com.byox.drawview:drawview:X.X.X'
 ```
 or Maven:
 ```xml
