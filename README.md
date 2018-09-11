@@ -94,7 +94,7 @@ Please visit [Wiki](https://github.com/ByoxCode/DrawView/wiki)
 
 Donate
 --------
-If this library is useful for you, and you like it, and if want to contribute for develop more libraries, you can buy me a beer. [Click here to donate](https://github.com/ByoxCode/DrawView/wiki/3.1-Contribute-for-develop-more-libraries)
+If this library is useful for you, and you like it, and if want to contribute for develop more libraries, you can buy me a beer. [![PayPal](https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg)](https://paypal.me/IngMedinaCruz)
 
 Apps that uses DrawView
 --------
