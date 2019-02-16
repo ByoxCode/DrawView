@@ -2,10 +2,11 @@
 
 ![drawview](https://github.com/ByoxCode/DrawView/blob/master/destacada.png)
 
+![DrawView](https://img.shields.io/badge/drawview-1.3.1-blue.svg) ![DrawViewSnapshot](https://img.shields.io/badge/snapshot-1.0.1-purple.svg) ![Platform](https://img.shields.io/badge/platform-Android-green.svg) ![Language](https://img.shields.io/badge/language-Java-red.svg)
 
 Android view that allows the user to create drawings. Draw anything you like in your Android device from simple view.
 
-Customize draw settings like draw color, draw width or draw tools. 
+Customize draw settings like draw color, draw width or draw tools.
 
 Undo or redo actions it is possible with DrawView.
 
@@ -22,17 +23,43 @@ Usage
 
 With Gradle:
 ```groovy
-  compile 'com.byox.drawview:drawview:1.3.1'
+  implementation 'com.byox.drawview:drawview:X.X.X'
 ```
 or Maven:
 ```xml
 <dependency>
   <groupId>com.byox.drawview</groupId>
   <artifactId>drawview</artifactId>
-  <version>1.3.1</version>
+  <version>X.X.X</version>
   <type>pom</type>
 </dependency>
 ```
+
+Where **X.X.X** is the current version of DrawView
+
+Snapshot
+--------
+
+Import from:
+```groovy
+  maven { url "https://raw.githubusercontent.com/ByoxCode/DrawView/snapshot/aar/snapshots/" }
+```
+
+With Gradle:
+```groovy
+  implementation 'com.byox.drawview:drawview:X.X.X-SNAPSHOT'
+```
+or Maven:
+```xml
+<dependency>
+  <groupId>com.byox.drawview</groupId>
+  <artifactId>drawview</artifactId>
+  <version>X.X.X-SNAPSHOT</version>
+  <type>pom</type>
+</dependency>
+```
+
+Where **X.X.X** is the current version of DrawView Snapshot
 
 How to use
 --------
@@ -67,7 +94,7 @@ Please visit [Wiki](https://github.com/ByoxCode/DrawView/wiki)
 
 Donate
 --------
-If this library is useful for you, and you like it, and if want to contribute for develop more libraries, you can buy me a beer. [Click here to donate](https://github.com/ByoxCode/DrawView/wiki/3.1-Contribute-for-develop-more-libraries)
+If this library is useful for you, and you like it, and if want to contribute for develop more libraries, you can buy me a beer. [![PayPal](https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg)](https://paypal.me/IngMedinaCruz)
 
 Apps that uses DrawView
 --------

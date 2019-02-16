@@ -1,14 +1,19 @@
 package com.byox.drawview.enums;
 
+import java.io.Serializable;
+
 /**
  * Created by Ing. Oscar G. Medina Cruz on 06/11/2016.
  */
 
-public enum DrawingTool {
+public enum DrawingTool implements Serializable {
     PEN,
     LINE,
     ARROW,
-    RECTANGLE,
     CIRCLE,
-    ELLIPSE
+    ELLIPSE,
+    RECTANGLE,
+    TRIANGLE,
+    SHAPE/*,
+    STAR*/
 }

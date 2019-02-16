@@ -1,5 +1,6 @@
 package com.byox.drawview.abstracts;
 
+import com.byox.drawview.dictionaries.DrawCapture;
 import com.byox.drawview.interfaces.OnDrawCameraViewListener;
 
 public abstract class DrawCameraViewListener implements OnDrawCameraViewListener {
@@ -10,7 +11,7 @@ public abstract class DrawCameraViewListener implements OnDrawCameraViewListener
     }
 
     @Override
-    public void onDrawCameraViewCaptureEnd(Object[] data) {
+    public void onDrawCameraViewCaptureEnd(DrawCapture capture) {
 
     }
 

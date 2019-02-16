@@ -25,6 +25,7 @@ import android.view.animation.OvershootInterpolator;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.byox.drawview.abstracts.DrawCameraViewListener;
 import com.byox.drawview.abstracts.DrawViewListener;
+import com.byox.drawview.dictionaries.DrawCapture;
 import com.byox.drawview.enums.BackgroundScale;
 import com.byox.drawview.enums.BackgroundType;
 import com.byox.drawview.enums.DrawingCapture;
@@ -152,7 +153,7 @@ public class CameraActivity extends AppCompatActivity {
                     new Handler().postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            mDrawCameraView.createCapture(DrawingCapture.BITMAP);
+                            mDrawCameraView.createCapture(Bitmap.CompressFormat.PNG);
                         }
                     }, 300);
                 }
@@ -233,8 +234,8 @@ public class CameraActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onDrawCameraViewCaptureEnd(Object[] data) {
-                super.onDrawCameraViewCaptureEnd(data);
+            public void onDrawCameraViewCaptureEnd(DrawCapture capture) {
+                super.onDrawCameraViewCaptureEnd(capture);
 
                 mDrawCameraView.onStop();
                 mDrawCameraView.onStart();
@@ -242,7 +243,7 @@ public class CameraActivity extends AppCompatActivity {
                 if (mCardViewLoadingBackground.getVisibility() == View.VISIBLE)
                     AnimateUtils.ScaleOutAnimation(mCardViewLoadingBackground, 50, 300, new OvershootInterpolator(), true);
 
-                saveDraw(data);
+                saveDraw(capture);
             }
 
             @Override
@@ -343,10 +344,8 @@ public class CameraActivity extends AppCompatActivity {
         drawAttribsDialog.show(getSupportFragmentManager(), "drawAttribs");
     }
 
-    private void saveDraw(Object[] result) {
-        SaveBitmapDialog saveBitmapDialog = SaveBitmapDialog.newInstance();
-        saveBitmapDialog.setPreviewBitmap((Bitmap) result[0]);
-        saveBitmapDialog.setPreviewFormat(String.valueOf(result[1]));
+    private void saveDraw(DrawCapture drawCapture) {
+        SaveBitmapDialog saveBitmapDialog = SaveBitmapDialog.newInstance(drawCapture);
         saveBitmapDialog.setOnSaveBitmapListener(new SaveBitmapDialog.OnSaveBitmapListener() {
             @Override
             public void onSaveBitmapCompleted() {
@@ -408,10 +407,10 @@ public class CameraActivity extends AppCompatActivity {
                                 android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
                         STORAGE_PERMISSIONS);
             } else {
-                mDrawCameraView.createCapture(DrawingCapture.BITMAP);
+                mDrawCameraView.createCapture(Bitmap.CompressFormat.PNG);
             }
         } else {
-            mDrawCameraView.createCapture(DrawingCapture.BITMAP);
+            mDrawCameraView.createCapture(Bitmap.CompressFormat.PNG);
         }
     }
     //endregion

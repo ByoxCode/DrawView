@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputEditText;
 import android.support.v4.app.DialogFragment;
 import android.text.Editable;
@@ -15,6 +16,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.byox.drawview.dictionaries.DrawCapture;
 import com.byox.drawviewproject.R;
 
 import java.io.File;
@@ -28,16 +30,35 @@ import java.io.IOException;
 
 public class SaveBitmapDialog extends DialogFragment {
 
-    private OnSaveBitmapListener onSaveBitmapListener;
+    //region CONSTANTS
+    private static final String DRAW_CAPTURE = "DRAW_CAPTURE";
+    //endregion
 
-    // VARS
-    private Bitmap mPreviewBitmap;
-    private String mPreviewFormat;
+    //region LISTENERS
+    private OnSaveBitmapListener onSaveBitmapListener;
+    //endregion
+
+    //region VARS
+    private DrawCapture mDrawCapture;
+    private String mCaptureName;
+    //endregion
 
     public SaveBitmapDialog(){}
 
-    public static SaveBitmapDialog newInstance(){
-        return new SaveBitmapDialog();
+    public static SaveBitmapDialog newInstance(DrawCapture drawCapture){
+        SaveBitmapDialog saveBitmapDialog = new SaveBitmapDialog();
+        Bundle bundle = new Bundle();
+        bundle.putSerializable(DRAW_CAPTURE, drawCapture);
+        saveBitmapDialog.setArguments(bundle);
+        return saveBitmapDialog;
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null){
+            mDrawCapture = (DrawCapture) getArguments().getSerializable(DRAW_CAPTURE);
+        }
     }
 
     @NonNull
@@ -45,24 +66,26 @@ public class SaveBitmapDialog extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         View view = LayoutInflater.from(getContext())
                 .inflate(R.layout.layout_save_bitmap, null);
-        ImageView imageView = (ImageView) view.findViewById(R.id.iv_capture_preview);
-        final TextInputEditText textInputEditText = (TextInputEditText) view.findViewById(R.id.et_file_name);
+        ImageView imageView = view.findViewById(R.id.iv_capture_preview);
+        final TextInputEditText textInputEditText = view.findViewById(R.id.et_file_name);
 
-        final File filePath = Environment.getExternalStorageDirectory();
+        /*final File filePath = Environment.getExternalStorageDirectory();
         final String[] fileName = {"DrawViewCapture." + mPreviewFormat.toLowerCase()};
 
         if (mPreviewBitmap != null)
             imageView.setImageBitmap(mPreviewBitmap);
         else
-            imageView.setImageResource(R.color.colorAccent);
-        textInputEditText.setText(fileName[0]);
+            imageView.setImageResource(R.color.colorAccent);*/
+        imageView.setImageBitmap(mDrawCapture.getCaptureInBitmap());
+        mCaptureName = mDrawCapture.getSuggestedFileName();
+        textInputEditText.setText(mCaptureName);
 
         textInputEditText.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
             @Override public void afterTextChanged(Editable editable) { }
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                fileName[0] = charSequence.toString();
+                mCaptureName = charSequence.toString();
             }
         });
 
@@ -72,7 +95,7 @@ public class SaveBitmapDialog extends DialogFragment {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         try {
-                            if (!fileName[0].contains("."))
+                            /*if (!fileName[0].contains("."))
                                 fileName[0] = fileName[0] + "." + mPreviewFormat.toLowerCase();
                             textInputEditText.setText(fileName[0]);
 
@@ -83,7 +106,8 @@ public class SaveBitmapDialog extends DialogFragment {
                             mPreviewBitmap.compress(
                                     mPreviewFormat.toLowerCase().equals("jpg") ?
                                             Bitmap.CompressFormat.JPEG :
-                                            Bitmap.CompressFormat.PNG, 100, fileOutputStream);
+                                            Bitmap.CompressFormat.PNG, 100, fileOutputStream);*/
+                            mDrawCapture.save(textInputEditText.getText().toString());
 
                             if (onSaveBitmapListener != null)
                                 onSaveBitmapListener.onSaveBitmapCompleted();
@@ -106,12 +130,20 @@ public class SaveBitmapDialog extends DialogFragment {
     }
 
     // METHODS
-    public void setPreviewBitmap(Bitmap bitmap){
+    /*public void setPreviewBitmap(Bitmap bitmap){
         this.mPreviewBitmap = bitmap;
     }
 
     public void setPreviewFormat(String previewFormat){
         this.mPreviewFormat = previewFormat;
+    }*/
+
+    /**
+     * Load preview to save from {@link DrawCapture} instance
+     * @param drawCapture {@link DrawCapture} instance
+     */
+    public void loadDrawCapture(DrawCapture drawCapture){
+        this.mDrawCapture = drawCapture;
     }
 
     // LISTENER

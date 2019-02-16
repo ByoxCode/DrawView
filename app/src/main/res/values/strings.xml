@@ -20,6 +20,7 @@
     <!-- DIALOGS -->
     <string name="choose_draw_mode_tile">Select draw mode</string>
     <string name="choose_draw_tool_tile">Select draw tool</string>
+    <string name="choose_draw_tool_sides_title">Select side number</string>
     <string name="choose_background_title">BACKGROUND</string>
     <string name="choose_background_url">URL of the image</string>
     <string name="choose_background_url_default">http://hdqwalls.com/wallpapers/deadpool-abstract-art.jpg</string>

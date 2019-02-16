@@ -6,11 +6,8 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Typeface;
-import android.graphics.drawable.ColorDrawable;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.support.annotation.AttrRes;
@@ -22,6 +19,7 @@ import android.widget.FrameLayout;
 
 import com.byox.drawview.R;
 import com.byox.drawview.abstracts.DrawCameraViewListener;
+import com.byox.drawview.dictionaries.DrawCapture;
 import com.byox.drawview.enums.DrawingCapture;
 import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingOrientation;
@@ -29,18 +27,11 @@ import com.byox.drawview.enums.DrawingTool;
 import com.byox.drawview.interfaces.OnDrawCameraViewListener;
 import com.byox.drawview.utils.BitmapUtils;
 import com.byox.drawview.utils.SerializablePaint;
-import com.wonderkiln.camerakit.CameraKit;
-import com.wonderkiln.camerakit.CameraKitError;
-import com.wonderkiln.camerakit.CameraKitEvent;
 import com.wonderkiln.camerakit.CameraKitEventCallback;
-import com.wonderkiln.camerakit.CameraKitEventListener;
 import com.wonderkiln.camerakit.CameraKitImage;
-import com.wonderkiln.camerakit.CameraKitVideo;
 import com.wonderkiln.camerakit.CameraView;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 
 /**
@@ -225,7 +216,7 @@ public class DrawCameraView extends FrameLayout {
         }
     }
 
-    public void createCapture(final DrawingCapture drawingCapture) {
+    public void createCapture(final Bitmap.CompressFormat captureFormat) {
         if (mOnDrawCameraViewListener != null || mDrawCameraViewListener != null) {
             if (mOnDrawCameraViewListener != null)
                 mOnDrawCameraViewListener.onDrawCameraViewCaptureStart();
@@ -235,7 +226,7 @@ public class DrawCameraView extends FrameLayout {
             mCameraViewInstance.captureImage(new CameraKitEventCallback<CameraKitImage>() {
                 @Override
                 public void callback(CameraKitImage cameraKitImage) {
-                    new ProcessCapture(drawingCapture)
+                    new ProcessCapture(captureFormat)
                             .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cameraKitImage);
                 }
             });
@@ -278,30 +269,27 @@ public class DrawCameraView extends FrameLayout {
     @SuppressLint("StaticFieldLeak")
     class ProcessCapture extends AsyncTask<CameraKitImage, Void, Exception> {
 
-        private Object[] result;
-        private DrawingCapture drawingCapture;
+        private Bitmap.CompressFormat captureFormat;
+        private DrawCapture drawCapture;
 
-        public ProcessCapture(DrawingCapture drawingCapture) {
-            this.drawingCapture = drawingCapture;
+        public ProcessCapture(Bitmap.CompressFormat captureFormat){
+            this.captureFormat = captureFormat;
         }
 
         @Override
         protected Exception doInBackground(CameraKitImage... cameraKitImages) {
-            result = mDrawViewInstance.createCapture(DrawingCapture.BYTES);
+            byte[] capture;
+            drawCapture = mDrawViewInstance.createCapture(captureFormat);
+
             try {
-                result[0] = BitmapUtils.CombineBitmapArraysInSameBitmap(
-                        cameraKitImages[0].getJpeg(), (byte[]) result[0],
+                capture = BitmapUtils.CombineBitmapArraysInSameBitmap(
+                        cameraKitImages[0].getJpeg(), drawCapture.getCaptureInBytes(),
                         Bitmap.Config.ARGB_8888, Bitmap.CompressFormat.JPEG);
             } catch (IOException e) {
                 return e;
             }
-            result[1] = "JPG";
 
-            switch (drawingCapture) {
-                case BITMAP:
-                    result[0] = BitmapFactory.decodeByteArray((byte[]) result[0], 0, ((byte[]) result[0]).length);
-                    break;
-            }
+            drawCapture.setCaptureInBytes(capture);
 
             return null;
         }
@@ -317,9 +305,9 @@ public class DrawCameraView extends FrameLayout {
                     mDrawCameraViewListener.onDrawCameraViewError(e);
             } else {
                 if (mOnDrawCameraViewListener != null)
-                    mOnDrawCameraViewListener.onDrawCameraViewCaptureEnd(result);
+                    mOnDrawCameraViewListener.onDrawCameraViewCaptureEnd(drawCapture);
                 if (mDrawCameraViewListener != null)
-                    mDrawCameraViewListener.onDrawCameraViewCaptureEnd(result);
+                    mDrawCameraViewListener.onDrawCameraViewCaptureEnd(drawCapture);
             }
         }
     }

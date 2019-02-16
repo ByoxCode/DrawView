@@ -1,20 +1,13 @@
 package com.byox.drawview.dictionaries;
 
-import android.graphics.Bitmap;
 import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.graphics.Path;
 
-import com.byox.drawview.enums.BackgroundScale;
-import com.byox.drawview.enums.BackgroundType;
 import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingTool;
 import com.byox.drawview.utils.SerializablePaint;
 import com.byox.drawview.utils.SerializablePath;
 
-import java.io.File;
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * Created by Ing. Oscar G. Medina Cruz on 07/11/2016.
@@ -27,19 +20,22 @@ import java.util.List;
 
 public class DrawMove implements Serializable {
 
+    //region VARS
     private static DrawMove mSingleton;
 
     private SerializablePaint mPaint;
     private DrawingMode mDrawingMode = null;
     private DrawingTool mDrawingTool = null;
+    private int mDrawingShapeSides;
     //private List<SerializablePath> mDrawingPathList;
     private SerializablePath mDrawingPath;
     private float mStartX, mStartY, mEndX, mEndY;
     private String mText;
     private Matrix mBackgroundMatrix;
     private byte[] mBackgroundImage;
+    //endregion
 
-    // METHODS
+    //region CONSTRUCTORS
     private DrawMove() {
     }
 
@@ -47,54 +43,83 @@ public class DrawMove implements Serializable {
         mSingleton = new DrawMove();
         return mSingleton;
     }
+    //endregion
 
-    // GETTERS
+    //region GETTERS
 
     public SerializablePaint getPaint() {
-        return mPaint;
+        if (mSingleton != null)
+            return mPaint;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawingMode getDrawingMode() {
-        return mDrawingMode;
+        if (mSingleton != null)
+            return mDrawingMode;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public DrawingTool getDrawingTool() {
-        return mDrawingTool;
+        if (mSingleton != null)
+            return mDrawingTool;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public SerializablePath getDrawingPath() {
-        return mDrawingPath;
+        if (mSingleton != null)
+            return mDrawingPath;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public float getStartX() {
-        return mStartX;
+        if (mSingleton != null)
+            return mStartX;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public float getStartY() {
-        return mStartY;
+        if (mSingleton != null)
+            return mStartY;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public float getEndX() {
-        return mEndX;
+        if (mSingleton != null)
+            return mEndX;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public float getEndY() {
-        return mEndY;
+        if (mSingleton != null)
+            return mEndY;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public String getText() {
-        return mText;
+        if (mSingleton != null)
+            return mText;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
-    public Matrix getBackgroundMatrix(){
-        return mBackgroundMatrix;
+    public Matrix getBackgroundMatrix() {
+        if (mSingleton != null)
+            return mBackgroundMatrix;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
     public byte[] getBackgroundImage() {
-        return mBackgroundImage;
+        if (mSingleton != null)
+            return mBackgroundImage;
+        else throw new RuntimeException("Create new instance of DrawMove first!");
     }
 
-    // SETTERS
+    public int getDrawingShapeSides() {
+        return mDrawingShapeSides;
+    }
+
+    //endregion
+
+    //region SETTERS
 
     public DrawMove setPaint(SerializablePaint paint) {
         if (mSingleton != null) {
@@ -166,4 +191,11 @@ public class DrawMove implements Serializable {
             return mSingleton;
         } else throw new RuntimeException("Create new instance of DrawMove first!");
     }
+
+    public DrawMove setDrawingShapeSides(int drawingShapeSides) {
+        this.mDrawingShapeSides = drawingShapeSides;
+        return this;
+    }
+
+    //endregion
 }

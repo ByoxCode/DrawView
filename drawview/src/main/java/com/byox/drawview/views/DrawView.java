@@ -42,10 +42,11 @@ import android.widget.ImageView;
 import com.byox.drawview.R;
 import com.byox.drawview.abstracts.DrawViewListener;
 import com.byox.drawview.dictionaries.BackgroundImageData;
+import com.byox.drawview.dictionaries.DrawCapture;
+import com.byox.drawview.dictionaries.DrawData;
 import com.byox.drawview.dictionaries.DrawMove;
 import com.byox.drawview.enums.BackgroundScale;
 import com.byox.drawview.enums.BackgroundType;
-import com.byox.drawview.enums.DrawingCapture;
 import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingOrientation;
 import com.byox.drawview.enums.DrawingTool;
@@ -53,24 +54,17 @@ import com.byox.drawview.enums.ImageType;
 import com.byox.drawview.interfaces.OnDrawViewListener;
 import com.byox.drawview.utils.BitmapUtils;
 import com.byox.drawview.utils.ImageLoader;
+import com.byox.drawview.utils.MathUtils;
 import com.byox.drawview.utils.MatrixUtils;
 import com.byox.drawview.utils.SerializablePaint;
-import com.byox.drawview.utils.SerializablePath;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 import com.squareup.picasso.Transformation;
-import com.wonderkiln.camerakit.CameraKitError;
-import com.wonderkiln.camerakit.CameraKitEvent;
-import com.wonderkiln.camerakit.CameraKitEventListener;
-import com.wonderkiln.camerakit.CameraKitImage;
-import com.wonderkiln.camerakit.CameraKitVideo;
-import com.wonderkiln.camerakit.CameraView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by Ing. Oscar G. Medina Cruz on 06/11/2016.
@@ -85,8 +79,6 @@ import java.util.List;
  */
 public class DrawView extends FrameLayout implements View.OnTouchListener {
 
-    // TODO: CAN´T ATTACH CAMERA TO THIS VIEW DIRECTLY, ADD TO SEPARATED VIEW.
-
     //region CONSTANTS
     private final String TAG = DrawView.class.getSimpleName();
     private final int DEFAULT_BACKGROUND_QUALITY = 50;
@@ -100,18 +92,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     //endregion
 
     //region VARS
-    private boolean isForCamera = false;
+    private DrawData mDrawData;
+    private BackgroundImageData mBackgroundImageData;
 
-    private int mDrawColor;
-    private int mDrawWidth;
-    private int mDrawAlpha;
-    private boolean mAntiAlias;
-    private boolean mDither;
-    private SerializablePaint.Style mPaintStyle;
-    private SerializablePaint.Cap mLineCap;
-    private Typeface mFontFamily;
-    private float mFontSize;
-    private int mBackgroundColor = -1;
     private Rect mCanvasClipBounds;
 
     private Bitmap mContentBitmap;
@@ -130,27 +113,17 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
 
     private int mLastTouchEvent = -1;
 
-    private DrawingMode mDrawingMode;
-    private DrawingTool mDrawingTool;
-    private DrawingOrientation mInitialDrawingOrientation;
-
-    private List<DrawMove> mDrawMoveHistory;
-    private DrawMove mDrawMoveForText;
-    private int mDrawMoveHistoryIndex = -1;
-    private int mDrawMoveBackgroundIndex = -1;
-
     private RectF mAuxRect;
     private PorterDuffXfermode mEraserXefferMode;
     private SerializablePaint mBackgroundPaint;
 
     private Rect mInvalidateRect;
-    private BackgroundImageData mBackgroundImageData;
+
     //endregion
 
     //region VIEWS
     private CardView mZoomRegionCardView;
     private ZoomRegionView mZoomRegionView;
-    private CameraView mCameraView;
     //endregion
 
     //region BACKGROUND TARGET
@@ -194,8 +167,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     /**
      * Default constructor
      *
-     * @param context       Application context
-     * @param willNotDraw   Enable it when use {@link DrawView} as a child of {@link DrawCameraView}
+     * @param context     Application context
+     * @param willNotDraw Enable it when use {@link DrawView} as a child of {@link DrawCameraView}
      */
     public DrawView(Context context, boolean willNotDraw) {
         super(context);
@@ -206,8 +179,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     /**
      * Default constructor
      *
-     * @param context       Application context
-     * @param attrs         Layout attributes
+     * @param context Application context
+     * @param attrs   Layout attributes
      */
     public DrawView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
@@ -216,9 +189,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     /**
      * Default constructor
      *
-     * @param context       Application context
-     * @param attrs         Layout attributes
-     * @param defStyleAttr  Layout default style attributes
+     * @param context      Application context
+     * @param attrs        Layout attributes
+     * @param defStyleAttr Layout default style attributes
      */
     public DrawView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
@@ -229,10 +202,10 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     /**
      * Default constructor
      *
-     * @param context       Application context
-     * @param attrs         Layout attributes
-     * @param defStyleAttr  Layout default style attributes
-     * @param defStyleRes   Layout default style resources
+     * @param context      Application context
+     * @param attrs        Layout attributes
+     * @param defStyleAttr Layout default style attributes
+     * @param defStyleRes  Layout default style resources
      */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public DrawView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
@@ -262,13 +235,15 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         mContentCanvas.drawRect(0, 0, mContentBitmap.getWidth(), mContentBitmap.getHeight(), mBackgroundPaint);
 
         // Draw canvas background
-        if (mDrawMoveBackgroundIndex != -1 && !mExcludeBackgroundFromErase)
-            drawBackgroundImage(mContentCanvas, mDrawMoveHistory.get(mDrawMoveBackgroundIndex));
+        if (mDrawData.getDrawMoveHistory().size() > 0
+                && mDrawData.getDrawMoveBackgroundIndex() != -1 && !mExcludeBackgroundFromErase)
+            drawBackgroundImage(mContentCanvas, mDrawData.getDrawMoveHistory().get(mDrawData.getDrawMoveBackgroundIndex()));
 
-        for (int i = 0; i < mDrawMoveHistoryIndex + 1; i++) {
-            drawMove(mContentCanvas, mDrawMoveHistory.get(i));
+        for (int i = 0; mDrawData.getDrawMoveHistory().size() > 0
+                && i < mDrawData.getDrawMoveHistoryIndex() + 1; i++) {
+            drawMove(mContentCanvas, mDrawData.getDrawMoveHistory().get(i));
 
-            if (i == mDrawMoveHistory.size() - 1) {
+            if (i == mDrawData.getDrawMoveHistory().size() - 1) {
                 if (mOnDrawViewListener != null) mOnDrawViewListener.onAllMovesPainted();
                 if (mDrawViewListener != null) mDrawViewListener.onAllMovesPainted();
             }
@@ -276,8 +251,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
 
         canvas.getClipBounds(mCanvasClipBounds);
 
-        if (mDrawMoveBackgroundIndex != -1 && mExcludeBackgroundFromErase)
-            drawBackgroundImage(canvas, mDrawMoveHistory.get(mDrawMoveBackgroundIndex));
+        if (mDrawData.getDrawMoveBackgroundIndex() != -1 && mExcludeBackgroundFromErase)
+            drawBackgroundImage(canvas, mDrawData.getDrawMoveHistory().get(mDrawData.getDrawMoveBackgroundIndex()));
 
         canvas.drawBitmap(mContentBitmap, 0, 0, null);
 
@@ -314,7 +289,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         if (motionEvent.getPointerCount() == 1) {
             switch (motionEvent.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
-                    lastMoveIndex = drawTouchDown(touchX, touchY);
+                    lastMoveIndex = drawTouchDown(motionEvent, touchX, touchY);
                     break;
                 case MotionEvent.ACTION_MOVE:
                     lastMoveIndex = drawTouchMove(motionEvent, touchX, touchY);
@@ -329,15 +304,19 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             mLastTouchEvent = -1;
         }
 
-        if (mDrawMoveHistory.size() > 0) {
+        if (lastMoveIndex >= 0 && mDrawData.getDrawMoveHistory().size() > 0
+                && mDrawData.getDrawMoveHistory().get(lastMoveIndex) != null
+                && mDrawData.getDrawMoveHistory().get(lastMoveIndex).getPaint() != null) {
             mInvalidateRect = new Rect(
-                    (int) (touchX - (mDrawMoveHistory.get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
-                    (int) (touchY - (mDrawMoveHistory.get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
-                    (int) (touchX + (mDrawMoveHistory.get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
-                    (int) (touchY + (mDrawMoveHistory.get(lastMoveIndex).getPaint().getStrokeWidth() * 2)));
+                    (int) (touchX - (mDrawData.getDrawMoveHistory().get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
+                    (int) (touchY - (mDrawData.getDrawMoveHistory().get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
+                    (int) (touchX + (mDrawData.getDrawMoveHistory().get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
+                    (int) (touchY + (mDrawData.getDrawMoveHistory().get(lastMoveIndex).getPaint().getStrokeWidth() * 2)));
         }
 
-        this.invalidate(mInvalidateRect.left, mInvalidateRect.top, mInvalidateRect.right, mInvalidateRect.bottom);
+        if (mInvalidateRect != null) {
+            this.invalidate(mInvalidateRect.left, mInvalidateRect.top, mInvalidateRect.right, mInvalidateRect.bottom);
+        }
         return true;
     }
 
@@ -345,30 +324,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     protected Parcelable onSaveInstanceState() {
         Bundle bundle = new Bundle();
         bundle.putParcelable("superState", super.onSaveInstanceState());
-        bundle.putInt("drawMoveHistorySize", mDrawMoveHistory.size());
-        for (int i = 0; i < mDrawMoveHistory.size(); i++) {
-            bundle.putSerializable("mDrawMoveHistory" + i, mDrawMoveHistory.get(i));
-        }
-        bundle.putInt("mDrawMoveHistoryIndex", mDrawMoveHistoryIndex);
-        bundle.putInt("mDrawMoveBackgroundIndex", mDrawMoveBackgroundIndex);
-        bundle.putSerializable("mDrawingMode", mDrawingMode);
-        bundle.putSerializable("mDrawingTool", mDrawingTool);
-        bundle.putSerializable("mInitialDrawingOrientation", mInitialDrawingOrientation);
-
-        bundle.putInt("mDrawColor", mDrawColor);
-        bundle.putInt("mDrawWidth", mDrawWidth);
-        bundle.putInt("mDrawAlpha", mDrawAlpha);
-        bundle.putInt("mBackgroundColor", mBackgroundColor);
-        bundle.putBoolean("mAntiAlias", mAntiAlias);
-        bundle.putBoolean("mDither", mDither);
-        bundle.putFloat("mFontSize", mFontSize);
-        bundle.putSerializable("mPaintStyle", mPaintStyle);
-        bundle.putSerializable("mLineCap", mLineCap);
-        bundle.putInt("mFontFamily",
-                mFontFamily == Typeface.DEFAULT ? 0 :
-                        mFontFamily == Typeface.MONOSPACE ? 1 :
-                                mFontFamily == Typeface.SANS_SERIF ? 2 :
-                                        mFontFamily == Typeface.SERIF ? 3 : 0);
+        bundle.putSerializable(DrawData.DRAW_DATA, mDrawData);
         return bundle;
     }
 
@@ -376,29 +332,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     protected void onRestoreInstanceState(Parcelable state) {
         if (state instanceof Bundle) {
             Bundle bundle = (Bundle) state;
-            for (int i = 0; i < bundle.getInt("drawMoveHistorySize"); i++) {
-                mDrawMoveHistory.add((DrawMove) bundle.getSerializable("mDrawMoveHistory" + i));
-            }
-            mDrawMoveHistoryIndex = bundle.getInt("mDrawMoveHistoryIndex");
-            mDrawMoveBackgroundIndex = bundle.getInt("mDrawMoveBackgroundIndex");
-            mDrawingMode = (DrawingMode) bundle.getSerializable("mDrawingMode");
-            mDrawingTool = (DrawingTool) bundle.getSerializable("mDrawingTool");
-            mInitialDrawingOrientation = (DrawingOrientation) bundle.getSerializable("mInitialDrawingOrientation");
-
-            mDrawColor = bundle.getInt("mDrawColor");
-            mDrawWidth = bundle.getInt("mDrawWidth");
-            mDrawAlpha = bundle.getInt("mDrawAlpha");
-            mBackgroundColor = bundle.getInt("mBackgroundColor");
-            mAntiAlias = bundle.getBoolean("mAntiAlias");
-            mDither = bundle.getBoolean("mDither");
-            mFontSize = bundle.getFloat("mFontSize");
-            mPaintStyle = (SerializablePaint.Style) bundle.getSerializable("mPaintStyle");
-            mLineCap = (SerializablePaint.Cap) bundle.getSerializable("mLineCap");
-            mFontFamily =
-                    bundle.getInt("mFontFamily") == 0 ? Typeface.DEFAULT :
-                            bundle.getInt("mFontFamily") == 1 ? Typeface.MONOSPACE :
-                                    bundle.getInt("mFontFamily") == 2 ? Typeface.SANS_SERIF :
-                                            bundle.getInt("mFontFamily") == 3 ? Typeface.SERIF : Typeface.DEFAULT;
+            mDrawData = (DrawData) bundle.getSerializable(DrawData.DRAW_DATA);
             state = bundle.getParcelable("superState");
         }
         super.onRestoreInstanceState(state);
@@ -410,13 +344,10 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     /**
      * Restart all the parameters and drawing history
      *
-     * @return if the draw view can be restarted
+     * @return If the draw view can be restarted
      */
     public boolean restartDrawing() {
-        if (mDrawMoveHistory != null) {
-            mDrawMoveHistory.clear();
-            mDrawMoveHistoryIndex = -1;
-            mDrawMoveBackgroundIndex = -1;
+        if (mDrawData != null && mDrawData.reset()) {
             invalidate();
 
             if (mOnDrawViewListener != null) mOnDrawViewListener.onClearDrawing();
@@ -431,58 +362,30 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     /**
      * Undo last drawing action
      *
-     * @return if the view can do the undo action
+     * @return If the view can do the undo action
      */
     public boolean undo() {
-        if (mDrawMoveHistoryIndex > -1 &&
-                mDrawMoveHistory.size() > 0) {
-            mDrawMoveHistoryIndex--;
-
-            mDrawMoveBackgroundIndex = -1;
-            for (int i = 0; i < mDrawMoveHistoryIndex + 1; i++) {
-                if (mDrawMoveHistory.get(i).getBackgroundImage() != null) {
-                    mDrawMoveBackgroundIndex = i;
-                }
-            }
-
-            invalidate();
-            return true;
-        }
         invalidate();
-        return false;
+        return mDrawData.undo();
     }
 
     /**
      * Check if the draw view can do undo action
      *
-     * @return if the view can do the undo action
+     * @return If the view can do the undo action
      */
     public boolean canUndo() {
-        return mDrawMoveHistoryIndex > -1 &&
-                mDrawMoveHistory.size() > 0;
+        return mDrawData.canUndo();
     }
 
     /**
      * Redo preview action
      *
-     * @return if the view can do the redo action
+     * @return If the view can do the redo action
      */
     public boolean redo() {
-        if (mDrawMoveHistoryIndex <= mDrawMoveHistory.size() - 1) {
-            mDrawMoveHistoryIndex++;
-
-            mDrawMoveBackgroundIndex = -1;
-            for (int i = 0; i < mDrawMoveHistoryIndex + 1; i++) {
-                if (mDrawMoveHistory.get(i).getBackgroundImage() != null) {
-                    mDrawMoveBackgroundIndex = i;
-                }
-            }
-
-            invalidate();
-            return true;
-        }
         invalidate();
-        return false;
+        return mDrawData.redo();
     }
 
     /**
@@ -491,63 +394,27 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return if the view can do the redo action
      */
     public boolean canRedo() {
-        return mDrawMoveHistoryIndex < mDrawMoveHistory.size() - 1;
+        return mDrawData.canRedo();
     }
 
     /**
-     * Create capture of the drawing view as bitmap or as byte array
+     * Create capture of the drawing view into {@link DrawCapture} instance
      *
-     * @param drawingCapture
-     * @return Object in form of bitmap or byte array
+     * @param captureFormat {@link android.graphics.Bitmap.CompressFormat} to save capture
+     * @return {@link DrawCapture} instance
      */
-    public Object[] createCapture(DrawingCapture drawingCapture) {
-        Object[] result = null;
-        switch (drawingCapture) {
-            case BITMAP:
-                result = new Object[2];
-                result[0] = mContentBitmap;
-                result[1] = mBackgroundPaint.getColor() == Color.TRANSPARENT ? "PNG" : "JPG";
-                break;
-            case BYTES:
-                result = new Object[2];
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                mContentBitmap.compress(
-                        mBackgroundPaint.getColor() == Color.TRANSPARENT ?
-                                Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG,
-                        100, stream);
-                result[0] = stream.toByteArray();
-                result[1] = mBackgroundPaint.getColor() == Color.TRANSPARENT ? "PNG" : "JPG";
-                break;
-        }
-        return result;
-    }
+    public DrawCapture createCapture(Bitmap.CompressFormat captureFormat) {
+        if (mBackgroundPaint.getColor() == Color.TRANSPARENT)
+            captureFormat = Bitmap.CompressFormat.PNG;
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        mContentBitmap.compress(captureFormat, 100, stream);
 
-    /*public Object[] createCapture(DrawingCapture drawingCapture, CameraView cameraView) {
-        Object[] result = null;
-        switch (drawingCapture) {
-            case BITMAP:
-                result = new Object[2];
-                Bitmap cameraBitmap = (Bitmap) cameraView.getCameraFrame(drawingCapture);
-                result[0] = BitmapUtils.GetCombinedBitmaps(cameraBitmap, mContentBitmap,
-                        mContentBitmap.getWidth(), mContentBitmap.getHeight());
-                cameraBitmap.recycle();
-                result[1] = "JPG";
-                break;
-            case BYTES:
-                result = new Object[2];
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                byte[] cameraBytes = (byte[]) cameraView.getCameraFrame(drawingCapture);
-                cameraBitmap = BitmapFactory.decodeByteArray(cameraBytes, 0, cameraBytes.length);
-                Bitmap resultBitmap = BitmapUtils.GetCombinedBitmaps(cameraBitmap, mContentBitmap,
-                        mContentBitmap.getWidth(), mContentBitmap.getHeight());
-                resultBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-                resultBitmap.recycle();
-                result[0] = stream.toByteArray();
-                result[1] = "JPG";
-                break;
-        }
-        return result;
-    }*/
+        DrawCapture drawCapture = DrawCapture.newInstance();
+        drawCapture.setCaptureInBytes(stream.toByteArray());
+        drawCapture.setCaptureFormat(captureFormat);
+
+        return drawCapture;
+    }
 
     /**
      * Refresh the text of the last movement item
@@ -555,15 +422,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @param newText
      */
     public void drawText(String newText) {
-        if (mDrawMoveForText != null) {
-            mDrawMoveHistory.add(mDrawMoveForText);
-            mDrawMoveHistoryIndex++;
-            mDrawMoveForText = null;
-        }
-
-        if (mDrawMoveHistory.get(mDrawMoveHistory.size() - 1)
-                .getDrawingMode() == DrawingMode.TEXT) {
-            mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setText(newText);
+        if (mDrawData.addText(newText)) {
             invalidate();
         } else {
             Log.e(TAG, "The last item that you want to refresh text isn't TEXT element.");
@@ -595,7 +454,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * Initialize general vars for the view
      */
     private void initVars() {
-        mDrawMoveHistory = new ArrayList<>();
+        mDrawData = new DrawData();
+        mDrawData.setDrawMoveHistory(new ArrayList<DrawMove>());
         mScaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleGestureListener());
         mGestureDetector = new GestureDetector(getContext(), new GestureListener());
         mCanvasClipBounds = new Rect();
@@ -668,69 +528,74 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     /**
      * Initialize view attributes
      *
-     * @param context       Application context
-     * @param attrs         {@link AttributeSet} of the view
+     * @param context Application context
+     * @param attrs   {@link AttributeSet} of the view
      */
     private void initAttributes(Context context, AttributeSet attrs) {
         TypedArray typedArray = context.getTheme().obtainStyledAttributes(
                 attrs, R.styleable.DrawView, 0, 0);
         try {
-            mDrawColor = typedArray.getColor(R.styleable.DrawView_dv_draw_color, Color.BLACK);
-            mDrawWidth = typedArray.getInteger(R.styleable.DrawView_dv_draw_width, 3);
-            mDrawAlpha = typedArray.getInteger(R.styleable.DrawView_dv_draw_alpha, 255);
-            mAntiAlias = typedArray.getBoolean(R.styleable.DrawView_dv_draw_anti_alias, true);
-            mDither = typedArray.getBoolean(R.styleable.DrawView_dv_draw_dither, true);
-            int paintStyle = typedArray.getInteger(R.styleable.DrawView_dv_draw_style, 2);
-            if (paintStyle == 0)
-                mPaintStyle = SerializablePaint.Style.FILL;
-            else if (paintStyle == 1)
-                mPaintStyle = SerializablePaint.Style.FILL_AND_STROKE;
-            else if (paintStyle == 2)
-                mPaintStyle = SerializablePaint.Style.STROKE;
-            int cap = typedArray.getInteger(R.styleable.DrawView_dv_draw_corners, 2);
-            if (cap == 0)
-                mLineCap = SerializablePaint.Cap.BUTT;
-            else if (cap == 1)
-                mLineCap = SerializablePaint.Cap.ROUND;
-            else if (cap == 2)
-                mLineCap = SerializablePaint.Cap.SQUARE;
-            int typeface = typedArray.getInteger(R.styleable.DrawView_dv_draw_font_family, 0);
-            if (typeface == 0)
-                mFontFamily = Typeface.DEFAULT;
-            else if (typeface == 1)
-                mFontFamily = Typeface.MONOSPACE;
-            else if (typeface == 2)
-                mFontFamily = Typeface.SANS_SERIF;
-            else if (typeface == 3)
-                mFontFamily = Typeface.SERIF;
-            mFontSize = typedArray.getInteger(R.styleable.DrawView_dv_draw_font_size, 12);
-            isForCamera = typedArray.getBoolean(R.styleable.DrawView_dv_draw_is_camera, false);
+            mDrawData.setDrawColor(typedArray.getColor(R.styleable.DrawView_dv_draw_color, Color.BLACK));
+            mDrawData.setDrawWidth(typedArray.getInteger(R.styleable.DrawView_dv_draw_width, 3));
+            mDrawData.setDrawAlpha(typedArray.getInteger(R.styleable.DrawView_dv_draw_alpha, 255));
+            mDrawData.setAntiAlias(typedArray.getBoolean(R.styleable.DrawView_dv_draw_anti_alias, true));
+            mDrawData.setDither(typedArray.getBoolean(R.styleable.DrawView_dv_draw_dither, true));
+            switch (typedArray.getInteger(R.styleable.DrawView_dv_draw_style, 2)) {
+                case 0:
+                    mDrawData.setPaintStyle(SerializablePaint.Style.FILL);
+                    break;
+                case 1:
+                    mDrawData.setPaintStyle(SerializablePaint.Style.FILL_AND_STROKE);
+                    break;
+                case 2:
+                    mDrawData.setPaintStyle(SerializablePaint.Style.STROKE);
+                    break;
+            }
+
+            switch (typedArray.getInteger(R.styleable.DrawView_dv_draw_corners, 2)) {
+                case 0:
+                    mDrawData.setLineCap(SerializablePaint.Cap.BUTT);
+                    break;
+                case 1:
+                    mDrawData.setLineCap(SerializablePaint.Cap.ROUND);
+                    break;
+                case 2:
+                    mDrawData.setLineCap(SerializablePaint.Cap.SQUARE);
+                    break;
+            }
+
+            mDrawData.setFontFamilyIndex(
+                    typedArray.getInteger(R.styleable.DrawView_dv_draw_font_family, 0));
+
+            mDrawData.setFontSize(typedArray.getInteger(R.styleable.DrawView_dv_draw_font_size, 12));
+            mDrawData.setForCamera(typedArray.getBoolean(R.styleable.DrawView_dv_draw_is_camera, false));
             int orientation = typedArray.getInteger(R.styleable.DrawView_dv_draw_orientation,
                     getWidth() > getHeight() ? 1 : 0);
-            mInitialDrawingOrientation = DrawingOrientation.values()[orientation];
-            if (getBackground() != null && !isForCamera)
+            mDrawData.setInitialDrawingOrientation(DrawingOrientation.values()[orientation]);
+            if (getBackground() != null && !mDrawData.isForCamera())
                 try {
-                    mBackgroundColor = ((ColorDrawable) getBackground()).getColor();
+                    mDrawData.setBackgroundColor(((ColorDrawable) getBackground()).getColor());
                     setBackgroundColor(Color.TRANSPARENT);
                 } catch (Exception e) {
                     e.printStackTrace();
                     setBackgroundColor(Color.TRANSPARENT);
-                    mBackgroundColor = ((ColorDrawable) getBackground()).getColor();
+                    mDrawData.setBackgroundColor(((ColorDrawable) getBackground()).getColor());
                     setBackgroundResource(R.drawable.drawable_transparent_pattern);
                 }
             else {
                 setBackgroundColor(Color.TRANSPARENT);
-                mBackgroundColor = ((ColorDrawable) getBackground()).getColor();
-                if (!isForCamera)
+                mDrawData.setBackgroundColor(((ColorDrawable) getBackground()).getColor());
+                if (!mDrawData.isForCamera())
                     setBackgroundResource(R.drawable.drawable_transparent_pattern);
             }
 
             mBackgroundPaint = new SerializablePaint();
             mBackgroundPaint.setStyle(SerializablePaint.Style.FILL);
-            mBackgroundPaint.setColor(mBackgroundColor != -1 ? mBackgroundColor : Color.TRANSPARENT);
+            mBackgroundPaint.setColor(mDrawData.getBackgroundColor() != -1
+                    ? mDrawData.getBackgroundColor() : Color.TRANSPARENT);
 
-            mDrawingTool = DrawingTool.values()[typedArray.getInteger(R.styleable.DrawView_dv_draw_tool, 0)];
-            mDrawingMode = DrawingMode.values()[typedArray.getInteger(R.styleable.DrawView_dv_draw_mode, 0)];
+            mDrawData.setDrawingTool(DrawingTool.values()[typedArray.getInteger(R.styleable.DrawView_dv_draw_tool, 0)]);
+            mDrawData.setDrawingMode(DrawingMode.values()[typedArray.getInteger(R.styleable.DrawView_dv_draw_mode, 0)]);
             mZoomEnabled = typedArray.getBoolean(R.styleable.DrawView_dv_draw_enable_zoom, false);
             mZoomRegionScale = typedArray.getFloat(R.styleable.DrawView_dv_draw_zoomregion_scale, mZoomRegionScale);
             mZoomRegionScaleMin = typedArray.getFloat(R.styleable.DrawView_dv_draw_zoomregion_minscale, mZoomRegionScaleMin);
@@ -751,65 +616,39 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                 case DRAW:
                     switch (drawMove.getDrawingTool()) {
                         case PEN:
-                            if (drawMove.getDrawingPath() != null)
-                                canvas.drawPath(drawMove.getDrawingPath(), drawMove.getPaint());
+                            drawWithPen(canvas, drawMove);
                             break;
                         case LINE:
-                            canvas.drawLine(drawMove.getStartX(), drawMove.getStartY(),
-                                    drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
+                            drawLine(canvas, drawMove);
                             break;
                         case ARROW:
-                            canvas.drawLine(drawMove.getStartX(), drawMove.getStartY(),
-                                    drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
-                            float angle = (float) Math.toDegrees(Math.atan2(drawMove.getEndY() - drawMove.getStartY(),
-                                    drawMove.getEndX() - drawMove.getStartX())) - 90;
-                            angle = angle < 0 ? angle + 360 : angle;
-                            float middleWidth = 8f + drawMove.getPaint().getStrokeWidth();
-                            float arrowHeadLarge = 30f + drawMove.getPaint().getStrokeWidth();
-
-                            canvas.save();
-                            canvas.translate(drawMove.getEndX(), drawMove.getEndY());
-                            canvas.rotate(angle);
-                            canvas.drawLine(0f, 0f, middleWidth, 0f, drawMove.getPaint());
-                            canvas.drawLine(middleWidth, 0f, 0f, arrowHeadLarge, drawMove.getPaint());
-                            canvas.drawLine(0f, arrowHeadLarge, -middleWidth, 0f, drawMove.getPaint());
-                            canvas.drawLine(-middleWidth, 0f, 0f, 0f, drawMove.getPaint());
-                            canvas.restore();
-
+                            drawArrow(canvas, drawMove);
                             break;
                         case RECTANGLE:
-                            canvas.drawRect(drawMove.getStartX(), drawMove.getStartY(),
-                                    drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
+                            drawRectangle(canvas, drawMove);
+                            break;
+                        case TRIANGLE:
+                            drawTriangle(canvas, drawMove);
                             break;
                         case CIRCLE:
-                            if (drawMove.getEndX() > drawMove.getStartX()) {
-                                canvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(),
-                                        drawMove.getEndX() - drawMove.getStartX(), drawMove.getPaint());
-                            } else {
-                                canvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(),
-                                        drawMove.getStartX() - drawMove.getEndX(), drawMove.getPaint());
-                            }
+                            drawCircle(canvas, drawMove);
                             break;
                         case ELLIPSE:
-                            mAuxRect.set(drawMove.getEndX() - Math.abs(drawMove.getEndX() - drawMove.getStartX()),
-                                    drawMove.getEndY() - Math.abs(drawMove.getEndY() - drawMove.getStartY()),
-                                    drawMove.getEndX() + Math.abs(drawMove.getEndX() - drawMove.getStartX()),
-                                    drawMove.getEndY() + Math.abs(drawMove.getEndY() - drawMove.getStartY()));
-                            canvas.drawOval(mAuxRect, drawMove.getPaint());
+                            drawEllipse(canvas, drawMove);
                             break;
+                        case SHAPE:
+                            drawShape(canvas, drawMove);
+                            break;
+                        /*case STAR:
+                            drawStar(canvas, drawMove);
+                            break;*/
                     }
                     break;
                 case TEXT:
-                    if (drawMove.getText() != null && !drawMove.getText().equals("")) {
-                        canvas.drawText(drawMove.getText(), drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
-                    }
+                    drawText(canvas, drawMove);
                     break;
                 case ERASER:
-                    if (drawMove.getDrawingPath() != null) {
-                        drawMove.getPaint().setXfermode(mEraserXefferMode);
-                        canvas.drawPath(drawMove.getDrawingPath(), drawMove.getPaint());
-                        drawMove.getPaint().setXfermode(null);
-                    }
+                    drawErase(canvas, drawMove);
                     break;
             }
         }
@@ -821,38 +660,16 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @param touchX X coordinate of touch event
      * @param touchY Y coordinate of touch event
      */
-    private int drawTouchDown(float touchX, float touchY) {
+    private int drawTouchDown(MotionEvent motionEvent, float touchX, float touchY) {
         mLastTouchEvent = MotionEvent.ACTION_DOWN;
-
-        /*if (mOnDrawViewListener != null)
-            mOnDrawViewListener.onStartDrawing();*/
-
-        if (mDrawMoveHistoryIndex >= -1 &&
-                mDrawMoveHistoryIndex < mDrawMoveHistory.size() - 1)
-            mDrawMoveHistory = mDrawMoveHistory.subList(0, mDrawMoveHistoryIndex + 1);
-
-        mDrawMoveHistory.add(DrawMove.newInstance()
+        DrawMove drawMove = DrawMove.newInstance()
                 .setPaint(getNewPaintParams())
                 .setStartX(touchX).setStartY(touchY)
                 .setEndX(touchX).setEndY(touchY)
-                .setDrawingMode(mDrawingMode).setDrawingTool(mDrawingTool));
-        int lastMoveIndex = mDrawMoveHistory.size() - 1;
-
-//                    Paint currentPaint = mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).getPaint();
-//                    currentPaint.setStrokeWidth(currentPaint.getStrokeWidth() / mZoomFactor);
-//                    mDrawMoveHistory.get(mDrawMoveHistory.size() - 1).setPaint(currentPaint);
-
-        mDrawMoveHistoryIndex++;
-
-        if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
-            SerializablePath path = new SerializablePath();
-            path.moveTo(touchX, touchY);
-            path.lineTo(touchX, touchY);
-
-            mDrawMoveHistory.get(lastMoveIndex).setDrawingPathList(path);
-        }
-
-        return lastMoveIndex;
+                .setDrawingMode(mDrawData.getDrawingMode())
+                .setDrawingTool(mDrawData.getDrawingTool())
+                .setDrawingShapeSides(mDrawData.getDrawingShapeSides());
+        return mDrawData.addMove(drawMove, motionEvent, -1, touchX, touchY, mZoomFactor, mCanvasClipBounds);
     }
 
     /**
@@ -874,20 +691,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                 mLastTouchEvent == MotionEvent.ACTION_MOVE)) {
             mLastTouchEvent = MotionEvent.ACTION_MOVE;
 
-            lastMoveIndex = mDrawMoveHistory.size() - 1;
-
-            if (mDrawMoveHistory.size() > 0) {
-                mDrawMoveHistory.get(lastMoveIndex).setEndX(touchX).setEndY(touchY);
-
-                if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
-                    for (int i = 0; i < motionEvent.getHistorySize(); i++) {
-                        float historicalX = motionEvent.getHistoricalX(i) / mZoomFactor + mCanvasClipBounds.left;
-                        float historicalY = motionEvent.getHistoricalY(i) / mZoomFactor + mCanvasClipBounds.top;
-                        mDrawMoveHistory.get(lastMoveIndex).getDrawingPath().lineTo(historicalX, historicalY);
-                    }
-                    mDrawMoveHistory.get(lastMoveIndex).getDrawingPath().lineTo(touchX, touchY);
-                }
-            }
+            lastMoveIndex = mDrawData.addMove(null, motionEvent, -1, touchX, touchY,
+                    mZoomFactor, mCanvasClipBounds);
         }
 
         return lastMoveIndex;
@@ -901,34 +706,14 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @param touchY      Y coordinate of touch event
      */
     private int drawTouchUp(MotionEvent motionEvent, float touchX, float touchY) {
-        int lastMoveIndex = mDrawMoveHistory.size() - 1;
+        int lastMoveIndex = mDrawData.addMove(null, motionEvent, mLastTouchEvent, touchX, touchY,
+                mZoomFactor, mCanvasClipBounds);
 
-        if (mLastTouchEvent == MotionEvent.ACTION_DOWN) {
-            if (mDrawMoveHistory.size() > 0) {
-                if (mDrawingMode == DrawingMode.TEXT) {
-                    mDrawMoveForText = mDrawMoveHistory.get(lastMoveIndex);
-                }
-                mDrawMoveHistory.remove(lastMoveIndex);
-                mDrawMoveHistoryIndex--;
-                lastMoveIndex--;
-            }
-        } else if (mLastTouchEvent == MotionEvent.ACTION_MOVE) {
+        if (mLastTouchEvent == MotionEvent.ACTION_MOVE) {
             mLastTouchEvent = -1;
-            if (mDrawMoveHistory.size() > 0) {
-                mDrawMoveHistory.get(lastMoveIndex).setEndX(touchX).setEndY(touchY);
-
-                if (mDrawingTool == DrawingTool.PEN || mDrawingMode == DrawingMode.ERASER) {
-                    for (int i = 0; i < motionEvent.getHistorySize(); i++) {
-                        float historicalX = motionEvent.getHistoricalX(i) / mZoomFactor + mCanvasClipBounds.left;
-                        float historicalY = motionEvent.getHistoricalY(i) / mZoomFactor + mCanvasClipBounds.top;
-                        mDrawMoveHistory.get(lastMoveIndex).getDrawingPath().lineTo(historicalX, historicalY);
-                    }
-                    mDrawMoveHistory.get(lastMoveIndex).getDrawingPath().lineTo(touchX, touchY);
-                }
-            }
         }
 
-        if (mDrawingMode == DrawingMode.TEXT) {
+        if (mDrawData.getDrawingMode() == DrawingMode.TEXT) {
             if (mOnDrawViewListener != null) mOnDrawViewListener.onRequestText();
             if (mDrawViewListener != null) mDrawViewListener.onRequestText();
         } else {
@@ -945,26 +730,17 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return new paint parameters for initialize drawing
      */
     private SerializablePaint getNewPaintParams() {
-        SerializablePaint paint = new SerializablePaint();
+        SerializablePaint paint = mDrawData.newSerializablePaint();
 
-        if (mDrawingMode == DrawingMode.ERASER) {
-            if (mDrawingTool != DrawingTool.PEN) {
+        if (mDrawData.getDrawingMode() == DrawingMode.ERASER) {
+            if (mDrawData.getDrawingTool() != DrawingTool.PEN) {
                 Log.i(TAG, "For use eraser drawing mode is necessary to use pen tool");
-                mDrawingTool = DrawingTool.PEN;
+                mDrawData.setDrawingTool(DrawingTool.PEN);
             }
-            paint.setColor(mBackgroundColor);
+            paint.setColor(mDrawData.getBackgroundColor());
         } else {
-            paint.setColor(mDrawColor);
+            paint.setColor(mDrawData.getDrawColor());
         }
-
-        paint.setStyle(mPaintStyle);
-        paint.setDither(mDither);
-        paint.setStrokeWidth(mDrawWidth);
-        paint.setAlpha(mDrawAlpha);
-        paint.setAntiAlias(mAntiAlias);
-        paint.setStrokeCap(mLineCap);
-        paint.setTypeface(mFontFamily);
-        paint.setTextSize(mFontSize);
 
         return paint;
     }
@@ -976,8 +752,10 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @param canvas   tha DrawView canvas
      */
     private void drawBackgroundImage(Canvas canvas, DrawMove drawMove) {
-        canvas.drawBitmap(BitmapFactory.decodeByteArray(drawMove.getBackgroundImage(), 0,
-                drawMove.getBackgroundImage().length), drawMove.getBackgroundMatrix(), null);
+        if (drawMove.getBackgroundImage() != null) {
+            canvas.drawBitmap(BitmapFactory.decodeByteArray(drawMove.getBackgroundImage(), 0,
+                    drawMove.getBackgroundImage().length), drawMove.getBackgroundMatrix(), null);
+        }
     }
 
     /**
@@ -1063,6 +841,179 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         return matrix;
     }
 
+    //region DRAWING METHODS
+    private void drawWithPen(Canvas canvas, DrawMove drawMove) {
+        if (drawMove.getDrawingPath() != null) {
+            canvas.drawPath(drawMove.getDrawingPath(), drawMove.getPaint());
+        }
+    }
+
+    private void drawLine(Canvas canvas, DrawMove drawMove) {
+        canvas.drawLine(drawMove.getStartX(), drawMove.getStartY(),
+                drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
+    }
+
+    private void drawArrow(Canvas canvas, DrawMove drawMove) {
+        canvas.drawLine(drawMove.getStartX(), drawMove.getStartY(),
+                drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
+        float angle = (float) Math.toDegrees(Math.atan2(drawMove.getEndY() - drawMove.getStartY(),
+                drawMove.getEndX() - drawMove.getStartX())) - 90;
+        angle = angle < 0 ? angle + 360 : angle;
+        float middleWidth = 8f + drawMove.getPaint().getStrokeWidth();
+        float arrowHeadLarge = 30f + drawMove.getPaint().getStrokeWidth();
+
+        canvas.save();
+        canvas.translate(drawMove.getEndX(), drawMove.getEndY());
+        canvas.rotate(angle);
+        canvas.drawLine(0f, 0f, middleWidth, 0f, drawMove.getPaint());
+        canvas.drawLine(middleWidth, 0f, 0f, arrowHeadLarge, drawMove.getPaint());
+        canvas.drawLine(0f, arrowHeadLarge, -middleWidth, 0f, drawMove.getPaint());
+        canvas.drawLine(-middleWidth, 0f, 0f, 0f, drawMove.getPaint());
+        canvas.restore();
+    }
+
+    private void drawRectangle(Canvas canvas, DrawMove drawMove) {
+        canvas.drawRect(drawMove.getStartX(), drawMove.getStartY(),
+                drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
+    }
+
+    private void drawTriangle(Canvas canvas, DrawMove drawMove) {
+        float radius = MathUtils.DistanceBetweenPoints(
+                drawMove.getStartX(), drawMove.getStartY(),
+                drawMove.getEndX(), drawMove.getEndY());
+
+        canvas.save();
+        canvas.translate(drawMove.getStartX(), drawMove.getStartY());
+
+        float internalAngle = 180 - (360 / 3);
+        canvas.translate(0, -radius);
+        canvas.rotate(-180 + (-internalAngle / 2));
+
+        radius = MathUtils.ShapeSideLength(3, radius);
+
+        for (int side = 0; side < 3; side++) {
+            canvas.drawLine(0, 0, 0, -radius, drawMove.getPaint());
+            canvas.translate(0, -radius);
+            canvas.rotate(-180 - internalAngle);
+        }
+        canvas.restore();
+    }
+
+    private void drawCircle(Canvas canvas, DrawMove drawMove) {
+        float radius = MathUtils.DistanceBetweenPoints(
+                drawMove.getStartX(), drawMove.getStartY(),
+                drawMove.getEndX(), drawMove.getEndY());
+
+        canvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(), radius, drawMove.getPaint());
+    }
+
+    private void drawEllipse(Canvas canvas, DrawMove drawMove) {
+        mAuxRect.set(drawMove.getEndX() - Math.abs(drawMove.getEndX() - drawMove.getStartX()),
+                drawMove.getEndY() - Math.abs(drawMove.getEndY() - drawMove.getStartY()),
+                drawMove.getEndX() + Math.abs(drawMove.getEndX() - drawMove.getStartX()),
+                drawMove.getEndY() + Math.abs(drawMove.getEndY() - drawMove.getStartY()));
+        canvas.drawOval(mAuxRect, drawMove.getPaint());
+    }
+
+    private void drawShape(Canvas canvas, DrawMove drawMove) {
+        float radius = MathUtils.DistanceBetweenPoints(
+                drawMove.getStartX(), drawMove.getStartY(),
+                drawMove.getEndX(), drawMove.getEndY());
+
+        canvas.save();
+        canvas.translate(drawMove.getStartX(), drawMove.getStartY());
+
+        if (drawMove.getDrawingShapeSides() < 5) {
+            drawMove.setDrawingShapeSides(5);
+            Log.i(TAG, "The minimum number of sides for a shape is 5");
+        }
+
+        float internalAngle = 180 - (360 / drawMove.getDrawingShapeSides());
+        canvas.translate(0, -radius);
+        canvas.rotate(-180 + (-internalAngle / 2));
+
+        radius = MathUtils.ShapeSideLength(drawMove.getDrawingShapeSides(), radius);
+
+        for (int side = 0; side < drawMove.getDrawingShapeSides(); side++) {
+            canvas.drawLine(0, 0, 0, -radius, drawMove.getPaint());
+            canvas.translate(0, -radius);
+            canvas.rotate(-180 - internalAngle);
+        }
+        canvas.restore();
+    }
+
+    /*private void drawStar(Canvas canvas, DrawMove drawMove) {
+        if (drawMove.getDrawingShapeSides() < 4) {
+            drawMove.setDrawingShapeSides(4);
+            Log.i(TAG, "The minimum number of sides for a shape is 4");
+        }
+
+        float radius = MathUtils.DistanceBetweenPoints(
+                drawMove.getStartX(), drawMove.getStartY(),
+                drawMove.getEndX(), drawMove.getEndY());
+        //float innerRadius = radius / 4.25f;//radius * ((1f / drawMove.getDrawingShapeSides()) - 0.015f);// this works for 4 sided star 0.235f;// radius / 2.085f;
+
+        //float innerRadius = MathUtils.CalculateInnerStarInnerRadius(radius, drawMove.getDrawingShapeSides());
+
+        canvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(), radius, drawMove.getPaint());
+        //canvas.drawCircle(drawMove.getStartX(), drawMove.getStartY(), innerRadius, drawMove.getPaint());
+
+        canvas.save();
+        canvas.translate(drawMove.getStartX(), drawMove.getStartY());
+
+        //region INNER SHAPE TESTING
+        /*float internalAngle = 180 - (360 / drawMove.getDrawingShapeSides());
+        canvas.translate(0, -radius);
+        canvas.rotate(-180 + (-internalAngle / 2));
+
+        float otherRadius = MathUtils.ShapeSideLength(drawMove.getDrawingShapeSides(), radius);
+
+        for (int side = 0; side < drawMove.getDrawingShapeSides(); side++) {
+            canvas.drawLine(0, 0, 0, -otherRadius, drawMove.getPaint());
+            canvas.translate(0, -otherRadius);
+            canvas.rotate(-180 - internalAngle);
+        }
+
+        canvas.rotate(internalAngle / 2);
+        canvas.translate(0, -radius);*/
+        //endregion
+
+        /*float spikeAngle = 180 / drawMove.getDrawingShapeSides();
+        float baseAngle = 360 / drawMove.getDrawingShapeSides();
+        float sideLength = MathUtils.CalculateStarSideLength(drawMove.getDrawingShapeSides(), radius);//MathUtils.Hypotenuse(spikeAngle / 2, innerRadius);//
+
+        for (int sides = 0; sides < drawMove.getDrawingShapeSides(); sides++) {
+            //canvas.drawLine(0, 0, 0, -radius, drawMove.getPaint());
+            canvas.translate(0, -radius);
+
+            canvas.rotate(-spikeAngle / 2);
+            canvas.drawLine(0, 0, 0, sideLength, drawMove.getPaint());
+
+            canvas.rotate(spikeAngle);
+            canvas.drawLine(0, 0, 0, sideLength, drawMove.getPaint());
+
+            canvas.rotate(-spikeAngle/2);
+            canvas.translate(0, radius);
+            canvas.rotate(baseAngle);
+        }
+        canvas.restore();
+    }*/
+
+    private void drawText(Canvas canvas, DrawMove drawMove) {
+        if (drawMove.getText() != null && !drawMove.getText().equals("")) {
+            canvas.drawText(drawMove.getText(), drawMove.getEndX(), drawMove.getEndY(), drawMove.getPaint());
+        }
+    }
+
+    private void drawErase(Canvas canvas, DrawMove drawMove) {
+        if (drawMove.getDrawingPath() != null) {
+            drawMove.getPaint().setXfermode(mEraserXefferMode);
+            canvas.drawPath(drawMove.getDrawingPath(), drawMove.getPaint());
+            drawMove.getPaint().setXfermode(null);
+        }
+    }
+    //endregion
+
     //endregion
 
     //region GETTERS
@@ -1073,88 +1024,55 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return current paint parameters
      */
     public SerializablePaint getCurrentPaintParams() {
-        SerializablePaint currentPaint;
-        if (mDrawMoveHistory.size() > 0 && mDrawMoveHistoryIndex >= 0
-                && mDrawMoveHistoryIndex != mDrawMoveBackgroundIndex) {
-            currentPaint = new SerializablePaint();
-            currentPaint.setColor(
-                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getColor());
-            currentPaint.setStyle(
-                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getStyle());
-            currentPaint.setDither(
-                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().isDither());
-            currentPaint.setStrokeWidth(
-                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getStrokeWidth());
-            currentPaint.setAlpha(
-                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getAlpha());
-            currentPaint.setAntiAlias(
-                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().isAntiAlias());
-            currentPaint.setStrokeCap(
-                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getStrokeCap());
-            currentPaint.setTypeface(
-                    mDrawMoveHistory.get(mDrawMoveHistoryIndex).getPaint().getTypeface());
-            currentPaint.setTextSize(mFontSize);
-        } else {
-            currentPaint = new SerializablePaint();
-            currentPaint.setColor(mDrawColor);
-            currentPaint.setStyle(mPaintStyle);
-            currentPaint.setDither(mDither);
-            currentPaint.setStrokeWidth(mDrawWidth);
-            currentPaint.setAlpha(mDrawAlpha);
-            currentPaint.setAntiAlias(mAntiAlias);
-            currentPaint.setStrokeCap(mLineCap);
-            currentPaint.setTypeface(mFontFamily);
-            currentPaint.setTextSize(24f);
-        }
-        return currentPaint;
+        return mDrawData.toSerializablePaint();
     }
 
     public int getDrawAlpha() {
-        return mDrawAlpha;
+        return mDrawData.getDrawAlpha();
     }
 
     public int getDrawColor() {
-        return mDrawColor;
+        return mDrawData.getDrawColor();
     }
 
     public int getDrawWidth() {
-        return mDrawWidth;
+        return mDrawData.getDrawWidth();
     }
 
     public DrawingMode getDrawingMode() {
-        return mDrawingMode;
+        return mDrawData.getDrawingMode();
     }
 
     public DrawingTool getDrawingTool() {
-        return mDrawingTool;
+        return mDrawData.getDrawingTool();
     }
 
     public int getBackgroundColor() {
-        return mBackgroundColor;
+        return mDrawData.getBackgroundColor();
     }
 
     public SerializablePaint.Style getPaintStyle() {
-        return mPaintStyle;
+        return mDrawData.getPaintStyle();
     }
 
     public SerializablePaint.Cap getLineCap() {
-        return mLineCap;
+        return mDrawData.getLineCap();
     }
 
     public Typeface getFontFamily() {
-        return mFontFamily;
+        return mDrawData.getFontFamily();
     }
 
     public float getFontSize() {
-        return mFontSize;
+        return mDrawData.getFontSize();
     }
 
     public boolean isAntiAlias() {
-        return mAntiAlias;
+        return mDrawData.isAntiAlias();
     }
 
     public boolean isDither() {
-        return mDither;
+        return mDrawData.isDither();
     }
 
     public boolean isZoomEnabled() {
@@ -1162,11 +1080,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     }
 
     public boolean isDrawViewEmpty() {
-        return mDrawMoveHistory == null || mDrawMoveHistory.size() == 0;
-    }
-
-    public boolean isForCamera() {
-        return this.isForCamera;
+        return mDrawData.hasMovements();
     }
 
     public float getMaxZoomFactor() {
@@ -1188,9 +1102,24 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     public boolean isExcludingBackgroundFromEraser() {
         return mExcludeBackgroundFromErase;
     }
+
+    public boolean isForCamera() {
+        return this.mDrawData.isForCamera();
+    }
     //endregion
 
     //region SETTERS
+
+    /**
+     * Set if the draw view is used for camera
+     *
+     * @param isForCamera Value that indicates if the draw view is for camera
+     * @return {@link DrawView} instance
+     */
+    public DrawView forCamera(boolean isForCamera) {
+        this.mDrawData.setForCamera(isForCamera);
+        return this;
+    }
 
     /**
      * Set the new draw parametters easily
@@ -1199,15 +1128,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView refreshAttributes(SerializablePaint paint) {
-        mDrawColor = paint.getColor();
-        mPaintStyle = paint.getStyle();
-        mDither = paint.isDither();
-        mDrawWidth = (int) paint.getStrokeWidth();
-        mDrawAlpha = paint.getAlpha();
-        mAntiAlias = paint.isAntiAlias();
-        mLineCap = paint.getStrokeCap();
-        mFontFamily = paint.getTypeface();
-        mFontSize = paint.getTextSize();
+        mDrawData.fromSerializablePaint(paint);
         return this;
     }
 
@@ -1218,7 +1139,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView alpha(int drawAlpha) {
-        this.mDrawAlpha = drawAlpha;
+        this.mDrawData.setDrawAlpha(drawAlpha);
         return this;
     }
 
@@ -1229,7 +1150,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView color(int drawColor) {
-        this.mDrawColor = drawColor;
+        this.mDrawData.setDrawColor(drawColor);
         return this;
     }
 
@@ -1240,7 +1161,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView width(int drawWidth) {
-        this.mDrawWidth = drawWidth;
+        this.mDrawData.setDrawWidth(drawWidth);
         return this;
     }
 
@@ -1251,18 +1172,33 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView mode(DrawingMode drawingMode) {
-        this.mDrawingMode = drawingMode;
+        this.mDrawData.setDrawingMode(drawingMode);
         return this;
     }
 
     /**
-     * Set the current draw tool like pen, line, circle, rectangle, circle
+     * Set the current {@link DrawingTool}
      *
-     * @param drawingTool
+     * @param drawingTool {@link DrawingTool} instance
      * @return {@link DrawView} instance
      */
     public DrawView tool(DrawingTool drawingTool) {
-        this.mDrawingTool = drawingTool;
+        this.mDrawData.setDrawingTool(drawingTool);
+        return this;
+    }
+
+    /**
+     * Set the current {@link DrawingTool}
+     *
+     * @param drawingTool {@link DrawingTool} instance
+     * @param shapeSides  Shape sides if {@link DrawingTool} is SHAPE
+     * @return {@link DrawView} instance
+     */
+    public DrawView tool(DrawingTool drawingTool, int shapeSides) {
+        if (drawingTool == DrawingTool.SHAPE){// || drawingTool == DrawingTool.STAR) {
+            this.mDrawData.setDrawingTool(drawingTool);
+            this.mDrawData.setDrawingShapeSides(shapeSides);
+        }
         return this;
     }
 
@@ -1273,7 +1209,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView backgroundColor(int backgroundColor) {
-        this.mBackgroundColor = backgroundColor;
+        this.mDrawData.setBackgroundColor(backgroundColor);
         return this;
     }
 
@@ -1284,7 +1220,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView paintStyle(SerializablePaint.Style paintStyle) {
-        this.mPaintStyle = paintStyle;
+        this.mDrawData.setPaintStyle(paintStyle);
         return this;
     }
 
@@ -1295,7 +1231,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView lineCap(SerializablePaint.Cap lineCap) {
-        this.mLineCap = lineCap;
+        this.mDrawData.setLineCap(lineCap);
         return this;
     }
 
@@ -1306,7 +1242,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView fontFamily(Typeface fontFamily) {
-        this.mFontFamily = fontFamily;
+        this.mDrawData.setFontFamily(fontFamily);
         return this;
     }
 
@@ -1317,7 +1253,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView fontSize(float fontSize) {
-        this.mFontSize = fontSize;
+        this.mDrawData.setFontSize(fontSize);
         return this;
     }
 
@@ -1328,7 +1264,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView antiAlias(boolean antiAlias) {
-        this.mAntiAlias = antiAlias;
+        this.mDrawData.setAntiAlias(antiAlias);
         return this;
     }
 
@@ -1339,7 +1275,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView dither(boolean dither) {
-        this.mDither = dither;
+        this.mDrawData.setDither(dither);
         return this;
     }
 
@@ -1351,17 +1287,6 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      */
     public DrawView enableZoom(boolean zoomEnabled) {
         this.mZoomEnabled = zoomEnabled;
-        return this;
-    }
-
-    /**
-     * Set if the draw view is used for camera
-     *
-     * @param isForCamera Value that indicates if the draw view is for camera
-     * @return {@link DrawView} instance
-     */
-    public DrawView forCamera(boolean isForCamera) {
-        this.isForCamera = isForCamera;
         return this;
     }
 
@@ -1397,14 +1322,14 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             throw new RuntimeException("Background image must be File, Bitmap, ByteArray, Integer (drawable) or String (Asset or URL).");
         }
 
-        if (isForCamera) {
+        if (mDrawData.isForCamera()) {
             Log.i(TAG, "You can't set a background image if your draw view is for camera");
             return this;
         }
 
-        if (mDrawMoveHistoryIndex >= -1 &&
-                mDrawMoveHistoryIndex < mDrawMoveHistory.size() - 1)
-            mDrawMoveHistory = mDrawMoveHistory.subList(0, mDrawMoveHistoryIndex + 1);
+        if (mDrawData.getDrawMoveHistoryIndex() >= -1 &&
+                mDrawData.getDrawMoveHistoryIndex() < mDrawData.getDrawMoveHistory().size() - 1)
+            mDrawData.setDrawMoveHistory(mDrawData.getDrawMoveHistory().subList(0, mDrawData.getDrawMoveHistoryIndex() + 1));
 
         final int drawViewWidth = this.getWidth();
 
@@ -1447,14 +1372,14 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             throw new RuntimeException("Background image must be File, Bitmap, ByteArray, Integer (drawable) or String (Asset or URL).");
         }
 
-        if (isForCamera) {
+        if (mDrawData.isForCamera()) {
             Log.i(TAG, "You can't set a background image if your draw view is for camera");
             return this;
         }
 
-        if (mDrawMoveHistoryIndex >= -1 &&
-                mDrawMoveHistoryIndex < mDrawMoveHistory.size() - 1)
-            mDrawMoveHistory = mDrawMoveHistory.subList(0, mDrawMoveHistoryIndex + 1);
+        if (mDrawData.getDrawMoveHistoryIndex() >= -1 &&
+                mDrawData.getDrawMoveHistoryIndex() < mDrawData.getDrawMoveHistory().size() - 1)
+            mDrawData.setDrawMoveHistory(mDrawData.getDrawMoveHistory().subList(0, mDrawData.getDrawMoveHistoryIndex() + 1));
 
         final int drawViewWidth = this.getWidth();
 
@@ -1533,11 +1458,12 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
 
     /**
      * Set the initial {@link DrawingOrientation} for the {@link DrawView}
-     * @param drawingOrientation           {@link DrawingOrientation} instance
-     * @return                             {@link DrawView} instance
+     *
+     * @param drawingOrientation {@link DrawingOrientation} instance
+     * @return {@link DrawView} instance
      */
-    public DrawView initialOrientation(DrawingOrientation drawingOrientation){
-        this.mInitialDrawingOrientation = drawingOrientation;
+    public DrawView initialOrientation(DrawingOrientation drawingOrientation) {
+        this.mDrawData.setInitialDrawingOrientation(drawingOrientation);
         return this;
     }
     //endregion
@@ -1688,17 +1614,18 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             background.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
             backgroundBytes = byteArrayOutputStream.toByteArray();
 
-            mDrawMoveHistory.add(DrawMove.newInstance()
+            mDrawData.getDrawMoveHistory().add(DrawMove.newInstance()
                     .setBackgroundImage(backgroundBytes,
                             getMatrixFromBackgroundScale(
                                     background.getWidth(),
                                     background.getHeight(),
                                     mBackgroundImageData.getBackgroundScale()))
-                    .setPaint(new SerializablePaint()));
+                    .setPaint(new SerializablePaint())
+                    .setDrawingShapeSides(mDrawData.getDrawingShapeSides()));
 
-            mDrawMoveHistoryIndex++;
+            mDrawData.setDrawMoveHistoryIndex(mDrawData.getDrawMoveHistoryIndex() + 1);
 
-            mDrawMoveBackgroundIndex = mDrawMoveHistoryIndex;
+            mDrawData.setDrawMoveBackgroundIndex(mDrawData.getDrawMoveHistoryIndex());
 
             return instance;
         }

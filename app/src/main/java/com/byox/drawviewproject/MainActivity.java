@@ -137,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(final int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (permissions.length == grantResults.length){
+        if (permissions.length == grantResults.length) {
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -259,7 +259,7 @@ public class MainActivity extends AppCompatActivity {
         int currentTool = 0;
         List<String> tools = new ArrayList<>();
 
-        for (int i = 0; i < DrawingTool.values().length; i++){
+        for (int i = 0; i < DrawingTool.values().length; i++) {
             tools.add(DrawingTool.values()[i].toString());
             if (DrawingTool.values()[i] == mDrawView.getDrawingTool()) currentTool = i;
         }
@@ -270,7 +270,27 @@ public class MainActivity extends AppCompatActivity {
                 .itemsCallbackSingleChoice(currentTool, new MaterialDialog.ListCallbackSingleChoice() {
                     @Override
                     public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
-                        mDrawView.tool(DrawingTool.values()[which]);
+                        if (DrawingTool.values()[which] == DrawingTool.SHAPE){// ||
+                                //DrawingTool.values()[which] == DrawingTool.STAR) {
+                            final DrawingTool tool = DrawingTool.SHAPE;// DrawingTool.values()[which];
+                            final String[] items = new String[]{"5", "6", "7", "8", "9", "10"};
+                            /*if (tool == DrawingTool.SHAPE) items = new String[]{"5", "6", "7", "8", "9", "10"};
+                            else items = new String[]{"4", "5", "6", "7", "8", "9", "10"};*/
+                            new MaterialDialog.Builder(MainActivity.this)
+                                    .title(R.string.choose_draw_tool_sides_title)
+                                    .items(items)
+                                    .itemsCallbackSingleChoice(0, new MaterialDialog.ListCallbackSingleChoice() {
+                                        @Override
+                                        public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
+                                            mDrawView.tool(tool, Integer.parseInt(items[which]));
+                                            return true;
+                                        }
+                                    })
+                                    .positiveText(android.R.string.ok)
+                                    .show();
+                        } else {
+                            mDrawView.tool(DrawingTool.values()[which]);
+                        }
                         return true;
                     }
                 })
@@ -282,7 +302,7 @@ public class MainActivity extends AppCompatActivity {
         int currentMode = 0;
         List<String> modes = new ArrayList<>();
 
-        for (int i = 0; i < DrawingMode.values().length; i++){
+        for (int i = 0; i < DrawingMode.values().length; i++) {
             modes.add(DrawingMode.values()[i].toString());
             if (DrawingMode.values()[i] == mDrawView.getDrawingMode()) currentMode = i;
         }
@@ -324,14 +344,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void saveDraw() {
-        SaveBitmapDialog saveBitmapDialog = SaveBitmapDialog.newInstance();
-        Object[] createCaptureResponse = mDrawView.createCapture(DrawingCapture.BITMAP);
-        saveBitmapDialog.setPreviewBitmap((Bitmap) createCaptureResponse[0]);
-        saveBitmapDialog.setPreviewFormat(String.valueOf(createCaptureResponse[1]));
+        SaveBitmapDialog saveBitmapDialog
+                = SaveBitmapDialog.newInstance(mDrawView.createCapture(Bitmap.CompressFormat.JPEG));
         saveBitmapDialog.setOnSaveBitmapListener(new SaveBitmapDialog.OnSaveBitmapListener() {
             @Override
             public void onSaveBitmapCompleted() {
-                Snackbar.make(mFabClearDraw, "Capture saved succesfully!", 2000).show();
+                Snackbar.make(mFabClearDraw, "Capture saved successfully!", 2000).show();
             }
 
             @Override
@@ -404,7 +422,7 @@ public class MainActivity extends AppCompatActivity {
                         }).show();
     }
 
-    private void requestText(){
+    private void requestText() {
         new MaterialDialog.Builder(this)
                 .title(R.string.request_text_title)
                 .inputType(InputType.TYPE_CLASS_TEXT)
@@ -457,7 +475,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         } else {
-            switch (option){
+            switch (option) {
                 case 0:
                     saveDraw();
                     break;

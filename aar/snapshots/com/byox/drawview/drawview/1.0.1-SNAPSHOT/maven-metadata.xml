@@ -2,11 +2,12 @@
 <metadata>
   <groupId>com.byox.drawview</groupId>
   <artifactId>drawview</artifactId>
+  <version>1.0.1-SNAPSHOT</version>
   <versioning>
-    <versions>
-      <version>1.0.0-SNAPSHOT</version>
-      <version>1.0.1-SNAPSHOT</version>
-    </versions>
+    <snapshot>
+      <timestamp>20190216.163707</timestamp>
+      <buildNumber>1</buildNumber>
+    </snapshot>
     <lastUpdated>20190216163707</lastUpdated>
   </versioning>
 </metadata>
