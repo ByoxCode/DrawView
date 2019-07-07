@@ -2,6 +2,7 @@ package com.byox.drawview.abstracts;
 
 import android.graphics.Bitmap;
 
+import com.byox.drawview.dictionaries.DrawCapture;
 import com.byox.drawview.enums.BackgroundType;
 import com.byox.drawview.interfaces.OnDrawViewListener;
 
@@ -49,6 +50,11 @@ public abstract class DrawViewListener implements OnDrawViewListener{
 
     @Override
     public void onDrawingError(Exception e) {
+
+    }
+
+    @Override
+    public void onCaptureCreated(DrawCapture drawCapture) {
 
     }
 }

@@ -16,6 +16,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.StyleRes;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.SizeF;
 import android.view.MotionEvent;
 import android.view.View;
@@ -26,10 +27,10 @@ import android.widget.ImageView;
  * Created by IngMedina on 30/03/2017.
  */
 
-public class ZoomRegionView extends android.support.v7.widget.AppCompatImageView implements View.OnTouchListener {
+public class ZoomRegionView extends android.support.v7.widget.AppCompatImageView {// implements View.OnTouchListener {
 
     // LISTENER
-    private OnZoomRegionListener mOnZoomRegionListener;
+    //private OnZoomRegionListener mOnZoomRegionListener;
 
     // VARS
     private Bitmap mParentContent;
@@ -81,12 +82,11 @@ public class ZoomRegionView extends android.support.v7.widget.AppCompatImageView
         super.onDraw(canvas);
     }
 
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
+    public void moveZoomArea(MotionEvent event){
         float touchX = event.getX();
         float touchY = event.getY();
 
-        switch (event.getActionMasked()){
+        switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 mCurrentMotionEvent = MotionEvent.ACTION_DOWN;
                 mMoveZoomArea = false;
@@ -102,13 +102,66 @@ public class ZoomRegionView extends android.support.v7.widget.AppCompatImageView
 
             case MotionEvent.ACTION_MOVE:
                 if ((mCurrentMotionEvent == MotionEvent.ACTION_DOWN
-                        || mCurrentMotionEvent == MotionEvent.ACTION_MOVE) && mMoveZoomArea){
+                        || mCurrentMotionEvent == MotionEvent.ACTION_MOVE) && mMoveZoomArea) {
                     mCurrentMotionEvent = MotionEvent.ACTION_MOVE;
+
                     Rect preview = new Rect(
-                            mZoomedRegion.left + (int) (touchX - mStartTouchX),
-                            mZoomedRegion.top + (int) (touchY - mStartTouchY),
-                            mZoomedRegion.right + (int) ((touchX - mStartTouchX)),
-                            mZoomedRegion.bottom + (int) ((touchY - mStartTouchY)));
+                            (int) (mZoomedRegion.left + (touchX - mStartTouchX)),
+                            (int) (mZoomedRegion.top + (touchY - mStartTouchY)),
+                            (int) (mZoomedRegion.right + (touchX - mStartTouchX)),
+                            (int) (mZoomedRegion.bottom + (touchY - mStartTouchY)));
+
+                    //Log.i("Preview", "preview.left: " + preview.left);
+
+                    if (preview.left >= 0 && preview.right <= getWidth()
+                            && preview.top >= 0 && preview.bottom <= getHeight()) {
+                        mZoomedRegion = preview;
+                        invalidate();
+                    }
+
+                    mStartTouchX = touchX;
+                    mStartTouchY = touchY;
+                }
+                break;
+
+            case MotionEvent.ACTION_UP:
+                mCurrentMotionEvent = MotionEvent.ACTION_UP;
+                mMoveZoomArea = false;
+                break;
+        }
+    }
+
+    /*@Override
+    public boolean onTouch(View v, MotionEvent event) {
+        float touchX = event.getX();
+        float touchY = event.getY();
+
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                mCurrentMotionEvent = MotionEvent.ACTION_DOWN;
+                mMoveZoomArea = false;
+
+                if (touchX >= mZoomedRegion.left && touchX <= mZoomedRegion.right
+                        && touchY >= mZoomedRegion.top && touchY <= mZoomedRegion.bottom) {
+                mMoveZoomArea = true;
+                mStartTouchX = touchX;
+                mStartTouchY = touchY;
+                }
+
+                break;
+
+            case MotionEvent.ACTION_MOVE:
+                if ((mCurrentMotionEvent == MotionEvent.ACTION_DOWN
+                        || mCurrentMotionEvent == MotionEvent.ACTION_MOVE) && mMoveZoomArea) {
+                    mCurrentMotionEvent = MotionEvent.ACTION_MOVE;
+
+                    Rect preview = new Rect(
+                            (int) (mZoomedRegion.left + (touchX - mStartTouchX)),
+                            (int) (mZoomedRegion.top + (touchY - mStartTouchY)),
+                            (int) (mZoomedRegion.right + (touchX - mStartTouchX)),
+                            (int) (mZoomedRegion.bottom + (touchY - mStartTouchY)));
+
+                    //Log.i("Preview", "preview.left: " + preview.left);
 
                     if (preview.left >= 0 && preview.right <= getWidth()
                             && preview.top >= 0 && preview.bottom <= getHeight()) {
@@ -119,9 +172,9 @@ public class ZoomRegionView extends android.support.v7.widget.AppCompatImageView
                     mStartTouchX = touchX;
                     mStartTouchY = touchY;
 
-                    if (mOnZoomRegionListener != null)
-                        mOnZoomRegionListener.onZoomRegionMoved(mZoomedRegion);
-                }
+                    /*if (mOnZoomRegionListener != null)
+                        mOnZoomRegionListener.onZoomRegionMoved(mZoomedRegion);*/
+                /*}
                 break;
 
             case MotionEvent.ACTION_UP:
@@ -130,9 +183,9 @@ public class ZoomRegionView extends android.support.v7.widget.AppCompatImageView
                 break;
         }
         return true;
-    }
+    }*/
 
-    // METHODS
+    //region PUBLIC METHODS
     private void initZoomRegion() {
         mZoomedRegionPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mZoomedRegionPaint.setColor(Color.BLACK);
@@ -143,7 +196,7 @@ public class ZoomRegionView extends android.support.v7.widget.AppCompatImageView
         mClearPaint.setAlpha(255);
         mClearPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_OUT));
 
-        setOnTouchListener(this);
+        //setOnTouchListener(this);
     }
 
     public void drawZoomRegion(Bitmap parentContent, Rect sourceRect, float scaleFactor) {
@@ -160,13 +213,14 @@ public class ZoomRegionView extends android.support.v7.widget.AppCompatImageView
 
         invalidate();
     }
+    //endregion
 
-    // GETTERS & SETTERS
+    //region GETTERS & SETTERS
     private void setZoomedRegionStrokeWidth(float strokeWidth) {
         this.mZoomedRegionPaint.setStrokeWidth(strokeWidth);
     }
 
-    private void setZoomedRegionStrokeColor(int strokeColor){
+    private void setZoomedRegionStrokeColor(int strokeColor) {
         this.mZoomedRegionPaint.setColor(strokeColor);
     }
 
@@ -174,16 +228,17 @@ public class ZoomRegionView extends android.support.v7.widget.AppCompatImageView
         return this.mZoomedRegionPaint.getStrokeWidth();
     }
 
-    public int getZoomedRegionStrokeColor(){
+    public int getZoomedRegionStrokeColor() {
         return this.mZoomedRegionPaint.getColor();
     }
+    //endregion
 
     // LISTENER
-    public void setOnZoomRegionListener(OnZoomRegionListener onZoomRegionListener){
+    /*public void setOnZoomRegionListener(OnZoomRegionListener onZoomRegionListener) {
         mOnZoomRegionListener = onZoomRegionListener;
     }
 
-    public interface OnZoomRegionListener{
+    public interface OnZoomRegionListener {
         void onZoomRegionMoved(Rect newRect);
-    }
+    }*/
 }

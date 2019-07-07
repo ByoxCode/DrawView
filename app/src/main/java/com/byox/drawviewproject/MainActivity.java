@@ -24,6 +24,7 @@ import android.view.animation.OvershootInterpolator;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.byox.drawview.abstracts.DrawViewListener;
+import com.byox.drawview.dictionaries.DrawCapture;
 import com.byox.drawview.enums.BackgroundScale;
 import com.byox.drawview.enums.BackgroundType;
 import com.byox.drawview.enums.DrawingCapture;
@@ -35,6 +36,8 @@ import com.byox.drawviewproject.dialogs.SaveBitmapDialog;
 import com.byox.drawviewproject.dialogs.SelectImageDialog;
 import com.byox.drawviewproject.utils.AnimateUtils;
 import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.NativeExpressAdView;
 
 import java.io.File;
@@ -64,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
     //endregion
 
     //region ADS
-    private NativeExpressAdView mAdView;
+    private AdView mAdView;
     //endregion
 
     //region EVENTS
@@ -77,9 +80,9 @@ public class MainActivity extends AppCompatActivity {
         mCardViewLoadingBackground = findViewById(R.id.cv_loading_card);
 
         setupToolbar();
+        setupADS();
         setupDrawView();
         setListeners();
-        setupADS();
     }
 
     @Override
@@ -236,6 +239,26 @@ public class MainActivity extends AppCompatActivity {
 
                 e.printStackTrace();
             }
+
+            @Override
+            public void onCaptureCreated(DrawCapture drawCapture) {
+                super.onCaptureCreated(drawCapture);
+
+                SaveBitmapDialog saveBitmapDialog
+                        = SaveBitmapDialog.newInstance(drawCapture);
+                saveBitmapDialog.setOnSaveBitmapListener(new SaveBitmapDialog.OnSaveBitmapListener() {
+                    @Override
+                    public void onSaveBitmapCompleted() {
+                        Snackbar.make(mFabClearDraw, "Capture saved successfully!", 2000).show();
+                    }
+
+                    @Override
+                    public void onSaveBitmapCanceled() {
+                        Snackbar.make(mFabClearDraw, "Capture saved canceled.", 2000).show();
+                    }
+                });
+                saveBitmapDialog.show(getSupportFragmentManager(), "saveBitmap");
+            }
         });
 
         mFabClearDraw.setOnClickListener(new View.OnClickListener() {
@@ -247,9 +270,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupADS() {
+        MobileAds.initialize(this,
+                "ca-app-pub-6238951090454835~5923556703");
         mAdView = findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder()
-                .addTestDevice("FCFD13908AA93E51A1BA390FA8010631")
+                .addTestDevice("790BE5F246F1F9AA4391D5B1F2E57E68")
                 .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
                 .build();
         mAdView.loadAd(adRequest);
@@ -344,20 +369,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void saveDraw() {
-        SaveBitmapDialog saveBitmapDialog
-                = SaveBitmapDialog.newInstance(mDrawView.createCapture(Bitmap.CompressFormat.JPEG));
-        saveBitmapDialog.setOnSaveBitmapListener(new SaveBitmapDialog.OnSaveBitmapListener() {
-            @Override
-            public void onSaveBitmapCompleted() {
-                Snackbar.make(mFabClearDraw, "Capture saved successfully!", 2000).show();
-            }
-
-            @Override
-            public void onSaveBitmapCanceled() {
-                Snackbar.make(mFabClearDraw, "Capture saved canceled.", 2000).show();
-            }
-        });
-        saveBitmapDialog.show(getSupportFragmentManager(), "saveBitmap");
+        mDrawView.createCapture(Bitmap.CompressFormat.JPEG);
     }
 
     private void chooseBackgroundImage() {

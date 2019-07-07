@@ -1,32 +1,11 @@
 apply plugin: 'com.android.library'
+//apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
-apply plugin: "com.jfrog.artifactory"
+//apply plugin: "com.jfrog.artifactory"
 apply plugin: 'maven-publish'
 apply plugin: 'maven'
 
-/*ext {
-    bintrayRepo = 'maven'
-    bintrayName = 'DrawView'
-
-    publishedGroupId = 'com.byox.drawview'
-    libraryName = 'DrawView'
-    artifact = 'drawview'
-
-    libraryDescription = 'Android view that allows the user to create drawings. Customize settings like color, width or tools. Undo or redo actions.'
-
-    siteUrl = 'https://github.com/ByoxCode/DrawView'
-    gitUrl = 'https://github.com/ByoxCode/DrawView.git'
-
-    libraryVersion = '1.3.1'
-
-    developerId = 'byox'
-    developerName = 'Oscar Medina'
-    developerEmail = 'ing.medinacruz@gmail.com'
-
-    licenseName = 'The Apache Software License, Version 2.0'
-    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-    allLicenses = ["Apache-2.0"]
-}*/
+// CONFIGURATION FOR POM FILE
 def pomConfig = {
     licenses {
         license {
@@ -42,18 +21,53 @@ def pomConfig = {
             email "${developer_email}"
         }
     }
+
     scm {
-        url "${scm_url}"
+        url "${maven_url}"
+    }
+}
+
+// PUBLISH RELEASE VERSION IN BINTRAY USING
+// gradlew install
+// gradlew bintrayUpload
+bintray {
+    user = System.getProperty('bintray.user')
+    key = System.getProperty('bintray.key')
+    publications = ['MyPublication']
+    override = true
+
+    pkg {
+        repo = "${bintray_pkg_repo}"
+        name = "${bintray_pkg_name}"
+        userOrg = "${developer_id}"
+        licenses = ["${bintray_pkg_licences}"]
+        vcsUrl = "${bintray_pkg_vcs_url}"
+
+        version {
+            name = "${maven_version}"
+            desc = "${maven_description}"
+            released  = new Date()
+            vcsTag = "${maven_version}"
+            //attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin']
+        }
     }
 }
 
 publishing {
     publications {
-        mavenPublication(MavenPublication) {
+        MyPublication(MavenPublication) {
             groupId "${maven_group_id}"
             artifactId "${maven_artifact_id}"
-            version Boolean.valueOf(System.getProperty("snapshot")) ? "${snapshot_version}" : "${maven_version}"
+            version "${maven_version}"
+
             pom.withXml {
+                configurations.compile.allDependencies.each {
+                    def dependencyNode = dependenciesNode.appendNode('dependency')
+                    dependencyNode.appendNode('groupId', it.group)
+                    dependencyNode.appendNode('artifactId', it.name)
+                    dependencyNode.appendNode('version', it.version)
+                }
+
                 def root = asNode()
                 root.appendNode('description', "${maven_description}")
                 root.appendNode('name', "${maven_name}")
@@ -64,46 +78,42 @@ publishing {
     }
 }
 
-bintray {
-    user = System.getProperty('bintray.user')
-    key = System.getProperty('bintray.key')
-    publications = ['mavenPublication']
-
-    pkg {
-        repo = "${bintray_pkg_repo}"
-        name = "${bintray_pkg_name}"
-        licenses = ["${bintray_pkg_licences}"]
-        vcsUrl = "${bintray_pkg_vcs_url}"
-        version {
-            /*name = '1.3.1'
-            desc = '1.3.1'*/
-            released  = new Date()
-        }
-    }
-
-}
-
+// to publish SNAPSHOTs to http://oss.jfrog.org/oss-snapshot-local/
+// and !SNAPSHOTs to http://oss.jfrog.org/oss-release-local/
+// ./gradlew artifactoryPublish
 /*artifactory {
-    contextUrl = "${snapshot_repo_context_url}"   //The base Artifactory URL if not overridden by the publisher/resolver
+    contextUrl = 'https://oss.jfrog.org/artifactory'
     publish {
+        contextUrl = 'https://oss.jfrog.org/artifactory'
         repository {
-            repoKey = "${snapshot_repo_key}"
-            username = System.getProperty('bintray.user')
-            password = System.getProperty('bintray.key')
+            username = "${artifactory_user}"
+            password = "${artifactory_password}"
+            repoKey = 'oss-snapshot-local'
+            maven = true
+
+        }
+        resolve {
+            repository {
+                repoKey = 'libs-snapshot'
+                username = "${artifactory_user}"
+                password = "${artifactory_password}"
+                maven = true
+
+            }
         }
         defaults {
-            publications('mavenPublication')
-            publishArtifacts = true
+            publications ('maven')
+            publishConfigs ('archives')
             publishPom = true
-        }
-    }
-    resolve {
-        repository {
-            repoKey = 'jcenter'
+            publishArtifacts = true
+            properties = [ 'bintray.version': "${snapshot_version}" ]
         }
     }
 }*/
 
+//gradlew bintrayUpload -Dbintray.user=<YOUR_USER_NAME> -Dbintray.key=<YOUR_API_KEY>
+
+// To upload "SNAPSHOT" as aar into GitHub
 uploadArchives {
     repositories.mavenDeployer {
         def deployPath = file(getProperty('aar.deployPath'))
@@ -119,7 +129,6 @@ uploadArchives {
 
 android {
     compileSdkVersion 27
-    buildToolsVersion '28.0.2'
 
     defaultConfig {
         minSdkVersion 15
@@ -151,6 +160,3 @@ dependencies {
 
     implementation 'com.wonderkiln:camerakit:0.12.6'
 }
-
-/*apply from: 'https://raw.githubusercontent.com/numetriclabz/jcenter/master/installv.gradle'
-apply from: 'https://raw.githubusercontent.com/numetriclabz/jcenter/master/bintrayv.gradle'*/

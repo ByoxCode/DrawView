@@ -73,6 +73,13 @@ public class DrawData implements Serializable {
         this.mDrawMoveHistoryIndex = drawMoveHistoryIndex;
     }
 
+    public DrawMove getLastMove(){
+        if (this.mDrawMoveHistory != null && this.mDrawMoveHistory.size() > 0){
+            return this.mDrawMoveHistory.get(this.mDrawMoveHistory.size() - 1);
+        }
+        return null;
+    }
+
     public int getDrawMoveBackgroundIndex() {
         return mDrawMoveBackgroundIndex;
     }

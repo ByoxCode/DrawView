@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>com.byox.drawview</groupId>
+  <artifactId>drawview</artifactId>
+  <version>1.0.2-SNAPSHOT</version>
+  <versioning>
+    <snapshot>
+      <timestamp>20190707.212242</timestamp>
+      <buildNumber>1</buildNumber>
+    </snapshot>
+    <lastUpdated>20190707212242</lastUpdated>
+    <snapshotVersions>
+      <snapshotVersion>
+        <extension>aar</extension>
+        <value>1.0.2-20190707.212242-1</value>
+        <updated>20190707212242</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>1.0.2-20190707.212242-1</value>
+        <updated>20190707212242</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+</metadata>

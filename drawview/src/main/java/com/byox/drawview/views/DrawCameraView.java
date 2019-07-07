@@ -25,8 +25,10 @@ import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingOrientation;
 import com.byox.drawview.enums.DrawingTool;
 import com.byox.drawview.interfaces.OnDrawCameraViewListener;
+import com.byox.drawview.interfaces.OnDrawViewCaptureListener;
 import com.byox.drawview.utils.BitmapUtils;
 import com.byox.drawview.utils.SerializablePaint;
+import com.wonderkiln.camerakit.CameraKit;
 import com.wonderkiln.camerakit.CameraKitEventCallback;
 import com.wonderkiln.camerakit.CameraKitImage;
 import com.wonderkiln.camerakit.CameraView;
@@ -178,7 +180,7 @@ public class DrawCameraView extends FrameLayout {
                 mCameraViewInstance.setFlash(typedArray.getInteger(R.styleable.DrawCameraView_dcvckFlash, 0));
                 mCameraViewInstance.setFocus(typedArray.getInteger(R.styleable.DrawCameraView_dcvckFocus, 1));
                 mCameraViewInstance.setMethod(typedArray.getInteger(R.styleable.DrawCameraView_dcvckMethod, 0));
-                mCameraViewInstance.setPermissions(0);
+                mCameraViewInstance.setPermissions(CameraKit.Constants.PERMISSIONS_STRICT);
                 mCameraViewInstance.setJpegQuality(typedArray.getInteger(R.styleable.DrawCameraView_dcvckJpegQuality, 100));
                 mCameraViewInstance.setVideoQuality(typedArray.getInteger(R.styleable.DrawCameraView_dcvckVideoQuality, 4));
                 mCameraViewInstance.setCropOutput(true);
@@ -274,12 +276,21 @@ public class DrawCameraView extends FrameLayout {
 
         public ProcessCapture(Bitmap.CompressFormat captureFormat){
             this.captureFormat = captureFormat;
+
+            mDrawViewInstance.createCapture(captureFormat, new OnDrawViewCaptureListener() {
+                @Override
+                public void onCaptureCreated(DrawCapture drawCapture2) {
+                    drawCapture = drawCapture2;
+                }
+            });
         }
 
         @Override
         protected Exception doInBackground(CameraKitImage... cameraKitImages) {
             byte[] capture;
-            drawCapture = mDrawViewInstance.createCapture(captureFormat);
+
+            while (drawCapture == null){}
+            //drawCapture = mDrawViewInstance.createCapture(captureFormat);
 
             try {
                 capture = BitmapUtils.CombineBitmapArraysInSameBitmap(

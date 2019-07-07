@@ -26,11 +26,15 @@ public class SplashScreenActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_splash_screen);
 
-        mImageViewLogo = (ImageView) findViewById(R.id.iv_logo);
+        /*mImageViewLogo = (ImageView) findViewById(R.id.iv_logo);
         mImageViewLogo.setScaleX(0);
         mImageViewLogo.setScaleY(0);
 
-        initSplashScreen();
+        initSplashScreen();*/
+
+        // ONLY FOR TESTING
+        startActivity(new Intent(SplashScreenActivity.this, MainActivity.class));
+        finish();
     }
 
     // METHODS

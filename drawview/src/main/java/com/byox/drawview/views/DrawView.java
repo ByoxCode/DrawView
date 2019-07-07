@@ -20,6 +20,7 @@ import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -51,6 +52,7 @@ import com.byox.drawview.enums.DrawingMode;
 import com.byox.drawview.enums.DrawingOrientation;
 import com.byox.drawview.enums.DrawingTool;
 import com.byox.drawview.enums.ImageType;
+import com.byox.drawview.interfaces.OnDrawViewCaptureListener;
 import com.byox.drawview.interfaces.OnDrawViewListener;
 import com.byox.drawview.utils.BitmapUtils;
 import com.byox.drawview.utils.ImageLoader;
@@ -82,10 +84,12 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     //region CONSTANTS
     private final String TAG = DrawView.class.getSimpleName();
     private final int DEFAULT_BACKGROUND_QUALITY = 50;
+    private final int DEFAULT_ZOOM_REGION_SCALE = 4;
     //endregion
 
     //region LISTENER
     private OnDrawViewListener mOnDrawViewListener;
+    private OnDrawViewCaptureListener mOnDrawViewCaptureListener;
     private DrawViewListener mDrawViewListener;
     private ScaleGestureDetector mScaleGestureDetector;
     private GestureDetector mGestureDetector;
@@ -101,6 +105,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     private Canvas mContentCanvas;
 
     private boolean mZoomEnabled = false;
+    private float mZoomScrollStartX = 0f;
+    private float mZoomScrollStartY = 0f;
     private float mZoomFactor = 1.0f;
     private float mZoomCenterX = -1.0f;
     private float mZoomCenterY = -1.0f;
@@ -108,8 +114,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
     private float mZoomRegionScale = 4f;
     private float mZoomRegionScaleMin = 2f;
     private float mZoomRegionScaleMax = 5f;
-    private boolean mFromZoomRegion = false;
     private boolean mExcludeBackgroundFromErase = false;
+    private int mUpTimes = 0;
 
     private int mLastTouchEvent = -1;
 
@@ -239,6 +245,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                 && mDrawData.getDrawMoveBackgroundIndex() != -1 && !mExcludeBackgroundFromErase)
             drawBackgroundImage(mContentCanvas, mDrawData.getDrawMoveHistory().get(mDrawData.getDrawMoveBackgroundIndex()));
 
+        // Check all pending moves
         for (int i = 0; mDrawData.getDrawMoveHistory().size() > 0
                 && i < mDrawData.getDrawMoveHistoryIndex() + 1; i++) {
             drawMove(mContentCanvas, mDrawData.getDrawMoveHistory().get(i));
@@ -259,8 +266,8 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         if (isZoomEnabled()) {
             canvas.restore();
 
-            if (mZoomRegionView != null && !mFromZoomRegion) {
-                mZoomRegionView.drawZoomRegion(mContentBitmap, mCanvasClipBounds, 4);
+            if (mZoomRegionView != null) {
+                mZoomRegionView.drawZoomRegion(mContentBitmap, mCanvasClipBounds, DEFAULT_ZOOM_REGION_SCALE);
             }
         }
 
@@ -300,6 +307,29 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                 default:
                     return false;
             }
+        } else if (motionEvent.getPointerCount() == 2 && mZoomFactor > 1f) {
+            mLastTouchEvent = -1;
+            touchX = ((motionEvent.getX(0) + motionEvent.getX(1)) / 2)
+                    / mZoomFactor + mCanvasClipBounds.left;
+            touchY = ((motionEvent.getY(0) + motionEvent.getY(1)) / 2)
+                    / mZoomFactor + mCanvasClipBounds.top;
+
+            switch (motionEvent.getActionMasked()) {
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    mZoomScrollStartX = touchX;
+                    mZoomScrollStartY = touchY;
+
+                    // Check if the last move is only a point and delete it
+                    DrawMove drawMove = mDrawData.getLastMove();
+                    if (drawMove.getStartX() == drawMove.getEndX()
+                            && drawMove.getStartY() == drawMove.getEndY() && canUndo()) {
+                        undo();
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    moveZoomedView(touchX, touchY);
+                    break;
+            }
         } else {
             mLastTouchEvent = -1;
         }
@@ -307,11 +337,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         if (lastMoveIndex >= 0 && mDrawData.getDrawMoveHistory().size() > 0
                 && mDrawData.getDrawMoveHistory().get(lastMoveIndex) != null
                 && mDrawData.getDrawMoveHistory().get(lastMoveIndex).getPaint() != null) {
-            mInvalidateRect = new Rect(
-                    (int) (touchX - (mDrawData.getDrawMoveHistory().get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
-                    (int) (touchY - (mDrawData.getDrawMoveHistory().get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
-                    (int) (touchX + (mDrawData.getDrawMoveHistory().get(lastMoveIndex).getPaint().getStrokeWidth() * 2)),
-                    (int) (touchY + (mDrawData.getDrawMoveHistory().get(lastMoveIndex).getPaint().getStrokeWidth() * 2)));
+            float aux = mDrawData.getDrawMoveHistory().get(lastMoveIndex).getPaint().getStrokeWidth() * 2;
+            mInvalidateRect = new Rect((int) (touchX - aux), (int) (touchY - aux),
+                    (int) (touchX + aux), (int) (touchY + aux));
         }
 
         if (mInvalidateRect != null) {
@@ -401,19 +429,20 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * Create capture of the drawing view into {@link DrawCapture} instance
      *
      * @param captureFormat {@link android.graphics.Bitmap.CompressFormat} to save capture
-     * @return {@link DrawCapture} instance
      */
-    public DrawCapture createCapture(Bitmap.CompressFormat captureFormat) {
-        if (mBackgroundPaint.getColor() == Color.TRANSPARENT)
-            captureFormat = Bitmap.CompressFormat.PNG;
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        mContentBitmap.compress(captureFormat, 100, stream);
+    public void createCapture(Bitmap.CompressFormat captureFormat) {
+        new ProcessCapture().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, captureFormat);
+    }
 
-        DrawCapture drawCapture = DrawCapture.newInstance();
-        drawCapture.setCaptureInBytes(stream.toByteArray());
-        drawCapture.setCaptureFormat(captureFormat);
-
-        return drawCapture;
+    /**
+     * Create capture and return the response into {@link OnDrawViewCaptureListener} listener
+     *
+     * @param captureFormat {@link android.graphics.Bitmap.CompressFormat} of the capture
+     * @param onDrawViewCaptureListener {@link OnDrawViewCaptureListener} listener
+     */
+    public void createCapture(Bitmap.CompressFormat captureFormat, OnDrawViewCaptureListener onDrawViewCaptureListener) {
+        mOnDrawViewCaptureListener = onDrawViewCaptureListener;
+        new ProcessCapture().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, captureFormat);
     }
 
     /**
@@ -494,9 +523,11 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             init.recycle();
             mContentCanvas = new Canvas(mContentBitmap);
 
-            FrameLayout.LayoutParams layoutParams = new LayoutParams(getWidth() / 4, getHeight() / 4,
-                    Gravity.TOP | Gravity.END);
-            layoutParams.setMargins(12, 12, 12, 12);
+            FrameLayout.LayoutParams layoutParams =
+                    new LayoutParams(getWidth() / DEFAULT_ZOOM_REGION_SCALE,
+                            getHeight() / DEFAULT_ZOOM_REGION_SCALE,
+                            Gravity.TOP | Gravity.END);
+            layoutParams.setMargins(24, 24, 24, 24);
             mZoomRegionCardView = new CardView(getContext());
             mZoomRegionCardView.setLayoutParams(layoutParams);
             mZoomRegionCardView.setPreventCornerOverlap(true);
@@ -509,16 +540,6 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             mZoomRegionView = new ZoomRegionView(getContext());
             mZoomRegionView.setLayoutParams(childLayoutParams);
             mZoomRegionView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            mZoomRegionView.setOnZoomRegionListener(new ZoomRegionView.OnZoomRegionListener() {
-                @Override
-                public void onZoomRegionMoved(Rect newRect) {
-                    mFromZoomRegion = true;
-                    mZoomCenterX = newRect.centerX() * 4;
-                    mZoomCenterY = newRect.centerY() * 4;
-
-                    invalidate();
-                }
-            });
 
             mZoomRegionCardView.addView(mZoomRegionView);
             addView(mZoomRegionCardView);
@@ -705,9 +726,10 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @param touchX      X coordinate of touch event
      * @param touchY      Y coordinate of touch event
      */
-    private int drawTouchUp(MotionEvent motionEvent, float touchX, float touchY) {
+    private int drawTouchUp(final MotionEvent motionEvent, float touchX, float touchY) {
         int lastMoveIndex = mDrawData.addMove(null, motionEvent, mLastTouchEvent, touchX, touchY,
                 mZoomFactor, mCanvasClipBounds);
+        mUpTimes++;
 
         if (mLastTouchEvent == MotionEvent.ACTION_MOVE) {
             mLastTouchEvent = -1;
@@ -717,11 +739,66 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             if (mOnDrawViewListener != null) mOnDrawViewListener.onRequestText();
             if (mDrawViewListener != null) mDrawViewListener.onRequestText();
         } else {
-            if (mOnDrawViewListener != null) mOnDrawViewListener.onEndDrawing();
-            if (mDrawViewListener != null) mDrawViewListener.onEndDrawing();
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Log.i(TAG, "mUpTimes = " + mUpTimes);
+                    if (mUpTimes == 1){
+                        if (mOnDrawViewListener != null) mOnDrawViewListener.onEndDrawing();
+                        if (mDrawViewListener != null) mDrawViewListener.onEndDrawing();
+                        mUpTimes = 0;
+                    } else if (mUpTimes == 2){
+                        mUpTimes = 0;
+                    }
+                }
+            }, 200);
         }
 
         return lastMoveIndex;
+    }
+
+    /**
+     * Move the zoomed view with 2 fingers
+     *
+     * @param touchX The calculated X point between 2 fingers
+     * @param touchY The calculated Y point between 2 fingers
+     */
+    private void moveZoomedView(float touchX, float touchY) {
+        //Log.i(TAG, "------------------------------------------------------------");
+
+        //private boolean mZoomScrollEnabled = false;
+        float mZoomScrollAmountX = mZoomCenterX + (touchX - mZoomScrollStartX);
+
+        if (mZoomScrollAmountX > 0) {
+            if (mZoomScrollAmountX > mCanvasClipBounds.right) {
+                mZoomScrollAmountX = mCanvasClipBounds.right;
+            }
+            mZoomCenterX = mZoomScrollAmountX;
+        } else if (mZoomScrollAmountX < 0) {
+            mZoomCenterX = 0f;
+        }
+
+        float mZoomScrollAmountY = mZoomCenterY + (touchY - mZoomScrollStartY);
+
+        if (mZoomScrollAmountY > 0) {
+            if (mZoomScrollAmountY > mCanvasClipBounds.bottom) {
+                mZoomScrollAmountY = mCanvasClipBounds.bottom;
+            }
+            mZoomCenterY = mZoomScrollAmountY;
+        } else if (mZoomScrollAmountY < 0) {
+            mZoomCenterY = 0f;
+        }
+
+
+        /*Log.i(TAG, "mZoomScrollStartX: " + mZoomScrollStartX);
+        Log.i(TAG, "mZoomScrollStartY: " + mZoomScrollStartY);
+        Log.i(TAG, "mZoomCenterX: " + mZoomCenterX + " += " + mZoomScrollAmountX + " = " + (mZoomCenterX + mZoomScrollAmountX));
+        Log.i(TAG, "mZoomCenterY: " + mZoomCenterY + " += " + mZoomScrollAmountY + " = " + (mZoomCenterY + mZoomScrollAmountY));*/
+
+        mZoomScrollStartX = touchX;
+        mZoomScrollStartY = touchY;
+
+        invalidate();
     }
 
     /**
@@ -976,7 +1053,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
 
         canvas.rotate(internalAngle / 2);
         canvas.translate(0, -radius);*/
-        //endregion
+    //endregion
 
         /*float spikeAngle = 180 / drawMove.getDrawingShapeSides();
         float baseAngle = 360 / drawMove.getDrawingShapeSides();
@@ -1195,7 +1272,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
      * @return {@link DrawView} instance
      */
     public DrawView tool(DrawingTool drawingTool, int shapeSides) {
-        if (drawingTool == DrawingTool.SHAPE){// || drawingTool == DrawingTool.STAR) {
+        if (drawingTool == DrawingTool.SHAPE) {// || drawingTool == DrawingTool.STAR) {
             this.mDrawData.setDrawingTool(drawingTool);
             this.mDrawData.setDrawingShapeSides(shapeSides);
         }
@@ -1495,12 +1572,14 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
             if (mZoomEnabled) {
-                mFromZoomRegion = false;
                 mZoomFactor *= detector.getScaleFactor();
                 mZoomFactor = Math.max(1f, Math.min(mZoomFactor, mMaxZoomFactor));
                 mZoomFactor = mZoomFactor > mMaxZoomFactor ? mMaxZoomFactor : mZoomFactor < 1f ? 1f : mZoomFactor;
                 mZoomCenterX = detector.getFocusX() / mZoomFactor + mCanvasClipBounds.left;
                 mZoomCenterY = detector.getFocusY() / mZoomFactor + mCanvasClipBounds.top;
+
+                mZoomScrollStartX = mZoomCenterX;
+                mZoomScrollStartY = mZoomCenterY;
 
                 if (mZoomFactor > 1f)
                     showHideZoomRegionView(VISIBLE);
@@ -1521,7 +1600,6 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
         @Override
         public boolean onDoubleTap(final MotionEvent e) {
             if (mZoomEnabled) {
-                mFromZoomRegion = false;
                 int animationOption = -1;
 
                 if (mZoomFactor >= 1f && mZoomFactor < mMaxZoomFactor)
@@ -1550,6 +1628,9 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                             mZoomCenterX = e.getX() / mZoomFactor + mCanvasClipBounds.left;
                             mZoomCenterY = e.getY() / mZoomFactor + mCanvasClipBounds.top;
 
+                            mZoomScrollStartX = mZoomCenterX;
+                            mZoomScrollStartY = mZoomCenterY;
+
                             if (mZoomFactor > 1f)
                                 mZoomRegionCardView.setVisibility(VISIBLE);
                             else
@@ -1561,8 +1642,47 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
                     valueAnimator.start();
                 }
             }
+
+            /*if (mZoomScrollEnabled) {
+                mZoomScrollEnabled = false;
+                mZoomScrollStartX = 0;
+                mZoomScrollStartY = 0;
+                mZoomScrollAmountX = 0;
+                mZoomScrollAmountY = 0;
+            }*/
+
             return true;
         }
+
+        /*@Override
+        public void onLongPress(MotionEvent e) {
+
+            if (mZoomFactor > 1f) {
+                if (!mZoomScrollEnabled) {
+                    mZoomScrollEnabled = true;
+
+                    Log.i(TAG, "Now you can scroll into zoomed view");
+
+                    mZoomScrollStartX = e.getX() / mZoomFactor + mCanvasClipBounds.left;
+                    mZoomScrollStartY = e.getY() / mZoomFactor + mCanvasClipBounds.top;
+
+                    Log.i(TAG, "------------ onLongPress ----------------");
+                    Log.i(TAG, "mZoomScrollStartX: " + mZoomScrollStartX);
+                    Log.i(TAG, "mZoomScrollStartY: " + mZoomScrollStartY);
+
+                    mLastTouchEvent = MotionEvent.ACTION_DOWN;
+                } else {
+                    mZoomScrollEnabled = false;
+                    mZoomScrollStartX = 0;
+                    mZoomScrollStartY = 0;
+                    mZoomScrollAmountX = 0;
+                    mZoomScrollAmountY = 0;
+
+                    Log.i(TAG, "Now you can't scroll into zoomed view");
+                }
+            }
+            super.onLongPress(e);
+        }*/
     }
     //endregion
 
@@ -1572,6 +1692,7 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
 
         private Bitmap background;
         private byte[] backgroundBytes;
+        Matrix backgroundMatrix = null;
 
         @Override
         protected void onPreExecute() {
@@ -1614,12 +1735,13 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             background.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
             backgroundBytes = byteArrayOutputStream.toByteArray();
 
+            publishProgress();
+
+            while (backgroundMatrix == null) {
+            }
+
             mDrawData.getDrawMoveHistory().add(DrawMove.newInstance()
-                    .setBackgroundImage(backgroundBytes,
-                            getMatrixFromBackgroundScale(
-                                    background.getWidth(),
-                                    background.getHeight(),
-                                    mBackgroundImageData.getBackgroundScale()))
+                    .setBackgroundImage(backgroundBytes, backgroundMatrix)
                     .setPaint(new SerializablePaint())
                     .setDrawingShapeSides(mDrawData.getDrawingShapeSides()));
 
@@ -1628,6 +1750,16 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             mDrawData.setDrawMoveBackgroundIndex(mDrawData.getDrawMoveHistoryIndex());
 
             return instance;
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            super.onProgressUpdate(values);
+
+            backgroundMatrix = getMatrixFromBackgroundScale(
+                    background.getWidth(),
+                    background.getHeight(),
+                    mBackgroundImageData.getBackgroundScale());
         }
 
         @Override
@@ -1646,6 +1778,39 @@ public class DrawView extends FrameLayout implements View.OnTouchListener {
             }
 
             invalidate();
+        }
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    class ProcessCapture extends AsyncTask<Bitmap.CompressFormat, Void, DrawCapture> {
+        @Override
+        protected DrawCapture doInBackground(Bitmap.CompressFormat... formats) {
+
+            if (mBackgroundPaint.getColor() == Color.TRANSPARENT)
+                formats[0] = Bitmap.CompressFormat.PNG;
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            mContentBitmap.compress(formats[0], 100, stream);
+
+            DrawCapture drawCapture = DrawCapture.newInstance();
+            drawCapture.setCaptureInBytes(stream.toByteArray());
+            drawCapture.setCaptureFormat(formats[0]);
+
+            return drawCapture;
+        }
+
+        @Override
+        protected void onPostExecute(DrawCapture drawCapture) {
+            super.onPostExecute(drawCapture);
+
+            if (drawCapture != null) {
+                if (mDrawViewListener != null) {
+                    mDrawViewListener.onCaptureCreated(drawCapture);
+                }
+
+                if (mOnDrawViewCaptureListener != null) {
+                    mOnDrawViewCaptureListener.onCaptureCreated(drawCapture);
+                }
+            }
         }
     }
     //endregion

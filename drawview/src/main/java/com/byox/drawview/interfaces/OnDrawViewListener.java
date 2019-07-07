@@ -2,6 +2,7 @@ package com.byox.drawview.interfaces;
 
 import android.graphics.Bitmap;
 
+import com.byox.drawview.dictionaries.DrawCapture;
 import com.byox.drawview.enums.BackgroundType;
 
 /**
@@ -9,7 +10,7 @@ import com.byox.drawview.enums.BackgroundType;
  *
  * @author Ing. Oscar G. Medina Cruz
  */
-public interface OnDrawViewListener {
+public interface OnDrawViewListener extends OnDrawViewCaptureListener{
     void onStartDrawing();
     void onEndDrawing();
     void onClearDrawing();
