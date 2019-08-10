@@ -2,7 +2,7 @@
 
 ![drawview](https://github.com/ByoxCode/DrawView/blob/master/destacada.png)
 
-![DrawView](https://img.shields.io/badge/drawview-1.3.1-blue.svg) ![DrawViewSnapshot](https://img.shields.io/badge/snapshot-1.0.0-purple.svg) ![Platform](https://img.shields.io/badge/platform-Android-green.svg) ![Language](https://img.shields.io/badge/language-Java-red.svg)
+![DrawView](https://img.shields.io/badge/drawview-1.3.1-blue.svg) ![DrawViewSnapshot](https://img.shields.io/badge/snapshot-1.0.2-purple.svg) ![Platform](https://img.shields.io/badge/platform-Android-green.svg) ![Language](https://img.shields.io/badge/language-Java-red.svg)
 
 Android view that allows the user to create drawings. Draw anything you like in your Android device from simple view.
 
