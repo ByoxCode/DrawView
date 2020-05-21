@@ -1,9 +1,12 @@
 package com.byox.drawview.dictionaries;
 
+import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 import com.byox.drawview.enums.BackgroundScale;
 import com.byox.drawview.enums.BackgroundType;
@@ -25,7 +28,8 @@ import java.util.List;
  * @author Ing. Oscar G. Medina Cruz
  */
 
-public class DrawMove implements Serializable {
+@SuppressLint("ParcelCreator")
+public class DrawMove implements Serializable , Parcelable {
 
     private static DrawMove mSingleton;
 
@@ -165,5 +169,14 @@ public class DrawMove implements Serializable {
             mSingleton.mBackgroundMatrix = backgroundMatrix;
             return mSingleton;
         } else throw new RuntimeException("Create new instance of DrawMove first!");
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel parcel, int i) {
     }
 }
